@@ -11,8 +11,10 @@ import type {
   ChurchUnitListResponse,
   GuestResponseEntryRecord,
   GuestResponseEntryListResponse,
+  HomecellAttendanceRecord,
   HomecellAttendanceListResponse,
   HomecellAttendanceSummaryResponse,
+  HomecellRecord,
   HomecellListResponse,
   LgasResponse,
   StatesResponse,
@@ -113,6 +115,24 @@ export async function fetchHomecells(churchId: number, branchId?: number) {
   return apiRequest<HomecellListResponse>(`homecells?${params.toString()}`);
 }
 
+export async function fetchHomecell(homecellId: number) {
+  return apiRequest<{ data: HomecellRecord }>(`homecells/${homecellId}`);
+}
+
+export async function createHomecell(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: HomecellRecord }>("homecells", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateHomecell(homecellId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: HomecellRecord }>(`homecells/${homecellId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
 export async function fetchAttendanceSummary(churchId: number, branchId?: number, period = "weekly") {
   const params = new URLSearchParams({
     church_id: String(churchId),
@@ -127,6 +147,28 @@ export async function fetchAttendanceSummary(churchId: number, branchId?: number
 }
 
 export async function fetchAttendanceRecords(churchId: number, branchId?: number, perPage = 5) {
+  return fetchAttendanceRecordsWithFilters({
+    churchId,
+    branchId,
+    perPage,
+  });
+}
+
+export async function fetchAttendanceRecordsWithFilters({
+  churchId,
+  branchId,
+  serviceType,
+  dateFrom,
+  dateTo,
+  perPage = 15,
+}: {
+  churchId: number;
+  branchId?: number;
+  serviceType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  perPage?: number;
+}) {
   const params = new URLSearchParams({
     church_id: String(churchId),
     per_page: String(perPage),
@@ -134,6 +176,18 @@ export async function fetchAttendanceRecords(churchId: number, branchId?: number
 
   if (branchId) {
     params.set("branch_id", String(branchId));
+  }
+
+  if (serviceType) {
+    params.set("service_type", serviceType);
+  }
+
+  if (dateFrom) {
+    params.set("date_from", dateFrom);
+  }
+
+  if (dateTo) {
+    params.set("date_to", dateTo);
   }
 
   return apiRequest<AttendanceListResponse>(`attendance?${params.toString()}`);
@@ -164,6 +218,29 @@ export async function fetchHomecellAttendanceSummary(churchId: number, branchId?
 }
 
 export async function fetchHomecellAttendanceRecords(churchId: number, branchId?: number, homecellId?: number, limit = 5) {
+  return fetchHomecellAttendanceRecordsWithFilters({
+    churchId,
+    branchId,
+    homecellId,
+    limit,
+  });
+}
+
+export async function fetchHomecellAttendanceRecordsWithFilters({
+  churchId,
+  branchId,
+  homecellId,
+  limit = 25,
+  dateFrom,
+  dateTo,
+}: {
+  churchId: number;
+  branchId?: number;
+  homecellId?: number;
+  limit?: number;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
   const params = new URLSearchParams({
     church_id: String(churchId),
     limit: String(limit),
@@ -177,10 +254,60 @@ export async function fetchHomecellAttendanceRecords(churchId: number, branchId?
     params.set("homecell_id", String(homecellId));
   }
 
+  if (dateFrom) {
+    params.set("date_from", dateFrom);
+  }
+
+  if (dateTo) {
+    params.set("date_to", dateTo);
+  }
+
   return apiRequest<HomecellAttendanceListResponse>(`homecell-attendance?${params.toString()}`);
 }
 
+export async function fetchHomecellAttendanceRecord(recordId: number) {
+  return apiRequest<{ data: HomecellAttendanceRecord }>(`homecell-attendance/${recordId}`);
+}
+
+export async function createHomecellAttendance(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: HomecellAttendanceRecord }>("homecell-attendance", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateHomecellAttendance(recordId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: HomecellAttendanceRecord }>(`homecell-attendance/${recordId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
 export async function fetchMemberEntries(churchId: number, branchId?: number, limit = 50) {
+  return fetchMemberEntriesWithFilters({
+    churchId,
+    branchId,
+    limit,
+  });
+}
+
+export async function fetchMemberEntriesWithFilters({
+  churchId,
+  branchId,
+  entryType,
+  dateFrom,
+  dateTo,
+  search,
+  limit = 50,
+}: {
+  churchId: number;
+  branchId?: number;
+  entryType?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  limit?: number;
+}) {
   const params = new URLSearchParams({
     church_id: String(churchId),
     limit: String(limit),
@@ -188,6 +315,22 @@ export async function fetchMemberEntries(churchId: number, branchId?: number, li
 
   if (branchId) {
     params.set("branch_id", String(branchId));
+  }
+
+  if (entryType) {
+    params.set("entry_type", entryType);
+  }
+
+  if (dateFrom) {
+    params.set("date_from", dateFrom);
+  }
+
+  if (dateTo) {
+    params.set("date_to", dateTo);
+  }
+
+  if (search) {
+    params.set("search", search);
   }
 
   return apiRequest<GuestResponseEntryListResponse>(`guest-response-entries?${params.toString()}`);

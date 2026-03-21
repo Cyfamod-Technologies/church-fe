@@ -183,19 +183,40 @@ export interface HomecellRecord {
   meeting_time?: string | null;
   city_area?: string | null;
   host_name?: string | null;
+  host_phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  church?: {
+    id: number;
+    name?: string | null;
+    code?: string | null;
+  } | null;
   branch?: {
     id: number;
     name?: string | null;
     code?: string | null;
   } | null;
-  leaders?: Array<{
+  leaders?: HomecellLeaderRecord[];
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface HomecellLeaderRecord {
+  id: number;
+  user_id?: number | null;
+  name?: string | null;
+  role?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  is_primary?: boolean;
+  can_login?: boolean;
+  login_account?: {
     id: number;
     name?: string | null;
-    role?: string | null;
     email?: string | null;
     phone?: string | null;
-    is_primary?: boolean;
-  }>;
+    role?: string | null;
+  } | null;
 }
 
 export interface HomecellStats {
@@ -268,9 +289,14 @@ export interface AttendanceSummaryResponse {
 export interface HomecellAttendanceRecord {
   id: number;
   meeting_date?: string | null;
+  male_count?: number;
+  female_count?: number;
+  children_count?: number;
   total_count?: number;
   first_timers_count?: number;
   new_converts_count?: number;
+  offering_amount?: number | null;
+  notes?: string | null;
   homecell?: {
     id: number;
     name?: string | null;
@@ -286,6 +312,7 @@ export interface HomecellAttendanceRecord {
     name?: string | null;
     email?: string | null;
   } | null;
+  created_at?: string | null;
 }
 
 export interface HomecellAttendanceListResponse {
