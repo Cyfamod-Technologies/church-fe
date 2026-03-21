@@ -16,7 +16,6 @@ export default function BranchReportRoute() {
   const churchId = getChurchId(session);
 
   const [branches, setBranches] = useState<BranchRecord[]>([]);
-  const [stats, setStats] = useState<BranchStats | null>(null);
   const [branchTags, setBranchTags] = useState<BranchTagRecord[]>([]);
   const [tagFilter, setTagFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -42,7 +41,6 @@ export default function BranchReportRoute() {
 
         setBranchTags(tagsResponse.data || []);
         setBranches(branchesResponse.data || []);
-        setStats(branchesResponse.meta?.stats || null);
       } catch (loadError) {
         if (active) {
           setErrorMessage(loadError instanceof Error ? loadError.message : "Unable to load the branch report right now.");
@@ -76,6 +74,12 @@ export default function BranchReportRoute() {
       return tagMatches && searchMatches;
     });
   }, [branches, search, tagFilter]);
+
+  const stats = useMemo<BranchStats>(() => ({
+    total_branches: visibleBranches.length,
+    direct_branches: visibleBranches.filter((branch) => branch.current_parent?.type === "church" || branch.current_parent == null).length,
+    sub_branches: visibleBranches.filter((branch) => branch.current_parent?.type === "branch").length,
+  }), [visibleBranches]);
 
   const activeCount = useMemo(() => (
     visibleBranches.filter((branch) => String(branch.status || "").toLowerCase() === "active").length
@@ -176,7 +180,7 @@ export default function BranchReportRoute() {
                           <td>{currentParent}</td>
                           <td>{leadName}</td>
                           <td>
-                            <span className={`badge ${String(branch.status || "").toLowerCase() === "active" ? "text-light-success" : "text-light-warning"}`}>
+                            <span className={`badge ${getStatusBadgeClass(branch.status)}`}>
                               {branch.status || "unknown"}
                             </span>
                           </td>
@@ -192,6 +196,12 @@ export default function BranchReportRoute() {
       </div>
     </div>
   );
+}
+
+function getStatusBadgeClass(status?: string | null) {
+  return String(status || "").toLowerCase() === "active"
+    ? "text-light-success"
+    : "text-light-warning";
 }
 
 function StatCard({

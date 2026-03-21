@@ -133,7 +133,7 @@ export async function updateHomecell(homecellId: number, payload: Record<string,
   });
 }
 
-export async function fetchAttendanceSummary(churchId: number, branchId?: number, period = "weekly") {
+export async function fetchAttendanceSummary(churchId: number, branchId?: number, period = "weekly", date?: string) {
   const params = new URLSearchParams({
     church_id: String(churchId),
     period,
@@ -141,6 +141,10 @@ export async function fetchAttendanceSummary(churchId: number, branchId?: number
 
   if (branchId) {
     params.set("branch_id", String(branchId));
+  }
+
+  if (date) {
+    params.set("date", date);
   }
 
   return apiRequest<AttendanceSummaryResponse>(`attendance/summary?${params.toString()}`);
