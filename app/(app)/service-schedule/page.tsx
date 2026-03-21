@@ -27,7 +27,10 @@ export default function ServiceScheduleRoute() {
                   </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
-                  <Link className="btn btn-primary" href="/church-setup">Church Setup</Link>
+                  <Link className="btn btn-primary" href="/service-schedule-edit">
+                    <i className="ti ti-edit me-1" />
+                    Edit Schedule
+                  </Link>
                   <Link className="btn btn-outline-secondary" href="/church-profile">Back to Profile</Link>
                 </div>
               </div>
@@ -57,10 +60,11 @@ export default function ServiceScheduleRoute() {
                       {sundayServices.length > 0 ? (
                         sundayServices.map((service) => (
                           <div className="border rounded p-3" key={service.id}>
-                            <strong>{service.label || "--"}</strong>
-                            <div className="small text-secondary mt-1">
-                              {service.day_name || "Sunday"} • {formatTime(service.service_time)}
+                            <div className="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+                              <strong>{service.label || "--"}</strong>
+                              <span className="badge bg-light-primary text-primary">{formatTime(service.service_time)}</span>
                             </div>
+                            <div className="small text-secondary mt-1">{service.day_name || "Sunday"}</div>
                           </div>
                         ))
                       ) : (
@@ -83,6 +87,7 @@ export default function ServiceScheduleRoute() {
                         <div className="small text-secondary mt-1">
                           {wednesdayService.day_name || "Wednesday"} • {formatTime(wednesdayService.service_time)}
                         </div>
+                        <span className="badge bg-light-primary text-primary mt-2">{formatTime(wednesdayService.service_time)}</span>
                       </div>
                     ) : (
                       <div className="text-secondary">No Wednesday service configured.</div>

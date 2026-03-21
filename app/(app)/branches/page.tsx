@@ -41,6 +41,8 @@ export default function BranchesRoute() {
     });
   }, [branches, search, tagFilter]);
 
+  const orderedBranches = useMemo(() => buildHierarchyRows(filteredBranches), [filteredBranches]);
+
   return (
     <div className="container-fluid">
       <div className="row">
@@ -137,19 +139,40 @@ export default function BranchesRoute() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredBranches.length > 0 ? (
-                      filteredBranches.map((branch) => (
-                        <tr key={branch.id}>
-                          <td>{branch.name}</td>
-                          <td>{branch.tag?.name || "--"}</td>
-                          <td>{branch.current_parent?.name || "--"}</td>
-                          <td>{branch.creator_church?.name || branch.creator_user?.name || "--"}</td>
-                          <td>{branch.last_assignment?.user?.name || branch.last_assignment?.church?.name || "--"}</td>
-                          <td>{branch.pastor_name || branch.local_admin?.name || "--"}</td>
-                          <td>{[branch.city, branch.district_area, branch.state].filter(Boolean).join(", ") || "--"}</td>
-                          <td>{formatLabel(branch.status)}</td>
-                        </tr>
-                      ))
+                    {orderedBranches.length > 0 ? (
+                      orderedBranches.map((entry) => {
+                        const branch = entry.branch;
+
+                        return (
+                          <tr className={entry.depth > 0 ? "bg-light" : ""} key={branch.id}>
+                            <td style={{ paddingLeft: `${12 + (entry.depth * 20)}px` }}>
+                              <strong>
+                                {entry.depth > 0 ? (
+                                  <i className="ti ti-corner-down-right me-1 text-muted" />
+                                ) : (
+                                  <i className="ti ti-building-community me-1 text-primary" />
+                                )}
+                                {branch.name}
+                              </strong>
+                              <div className="small text-secondary">{branch.code || "--"}</div>
+                              <div className="small text-secondary">{branch.local_admin?.name || "--"}</div>
+                            </td>
+                            <td>
+                              {branch.tag ? (
+                                <span className={`badge ${getTagBadgeClass(branch.tag.slug)}`}>{branch.tag.name}</span>
+                              ) : (
+                                <span className="text-muted">No tag</span>
+                              )}
+                            </td>
+                            <td>{branch.current_parent?.name || "--"}</td>
+                            <td>{branch.creator_church?.name || branch.creator_user?.name || "--"}</td>
+                            <td>{branch.last_assignment?.user?.name || branch.last_assignment?.church?.name || "--"}</td>
+                            <td>{branch.pastor_name || branch.local_admin?.name || "--"}</td>
+                            <td>{[branch.city, branch.district_area, branch.state].filter(Boolean).join(", ") || "--"}</td>
+                            <td><span className={`badge ${getStatusBadgeClass(branch.status)}`}>{formatLabel(branch.status)}</span></td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td className="text-center text-muted py-4" colSpan={8}>No branches found.</td>
@@ -170,4 +193,65 @@ export default function BranchesRoute() {
       </div>
     </div>
   );
+}
+
+function buildHierarchyRows<T extends {
+  id: number;
+  current_parent?: { type?: string | null; id?: number | null } | null;
+}>(branches: T[]) {
+  const branchMap = new Map(branches.map((branch) => [branch.id, branch]));
+  const childrenMap = new Map<number, T[]>();
+  const roots: T[] = [];
+
+  branches.forEach((branch) => {
+    if (branch.current_parent?.type === "branch" && branch.current_parent.id && branchMap.has(branch.current_parent.id)) {
+      const currentChildren = childrenMap.get(branch.current_parent.id) || [];
+      currentChildren.push(branch);
+      childrenMap.set(branch.current_parent.id, currentChildren);
+      return;
+    }
+
+    roots.push(branch);
+  });
+
+  const ordered: Array<{ branch: T; depth: number }> = [];
+
+  function walk(branch: T, depth: number) {
+    ordered.push({ branch, depth });
+    (childrenMap.get(branch.id) || []).forEach((child) => walk(child, depth + 1));
+  }
+
+  roots.forEach((root) => walk(root, 0));
+
+  return ordered;
+}
+
+function getTagBadgeClass(slug?: string | null) {
+  const palette: Record<string, string> = {
+    district: "bg-primary",
+    zone: "bg-success",
+    "sub-district": "bg-warning text-dark",
+    area: "bg-info",
+    branch: "bg-secondary",
+  };
+
+  return slug ? (palette[slug] || "bg-dark") : "bg-dark";
+}
+
+function getStatusBadgeClass(status?: string | null) {
+  const normalized = String(status || "").toLowerCase();
+
+  if (normalized === "active") {
+    return "bg-success";
+  }
+
+  if (normalized === "review") {
+    return "bg-warning text-dark";
+  }
+
+  if (normalized === "inactive") {
+    return "bg-danger";
+  }
+
+  return "bg-secondary";
 }

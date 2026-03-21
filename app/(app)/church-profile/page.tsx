@@ -24,7 +24,10 @@ export default function ChurchProfileRoute() {
                   </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
-                  <Link className="btn btn-primary" href="/church-setup">Church Setup</Link>
+                  <Link className="btn btn-primary" href="/church-profile-edit">
+                    <i className="ti ti-edit me-1" />
+                    Edit Profile
+                  </Link>
                   <Link className="btn btn-outline-secondary" href="/service-schedule">Service Schedule</Link>
                 </div>
               </div>
