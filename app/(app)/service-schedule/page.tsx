@@ -1,17 +1,20 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatLabel, formatTime } from "@/lib/format";
 import { useChurchSetupData } from "@/components/church-setup/use-church-setup-data";
 
 export default function ServiceScheduleRoute() {
   const session = useSessionContext();
+  const searchParams = useSearchParams();
   const { serviceSchedules, church, error } = useChurchSetupData(session);
   const sundayServices = serviceSchedules.filter((item) => item.service_type === "sunday");
   const wednesdayService = serviceSchedules.find((item) => item.service_type === "wednesday") || null;
   const woseServices = serviceSchedules.filter((item) => item.service_type === "wose");
   const customServices = serviceSchedules.filter((item) => item.service_type === "special");
+  const updated = searchParams.get("updated") === "1";
 
   return (
     <div className="container-fluid">
@@ -39,6 +42,7 @@ export default function ServiceScheduleRoute() {
         </div>
 
         <div className="col-12">
+          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>Service schedule updated successfully.</div>
           <div className={`alert alert-danger ${error ? "" : "d-none"}`}>{error}</div>
         </div>
 

@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate, formatLabel } from "@/lib/format";
 import { useChurchSetupData } from "@/components/church-setup/use-church-setup-data";
 
 export default function ChurchProfileRoute() {
   const session = useSessionContext();
+  const searchParams = useSearchParams();
   const { church, error } = useChurchSetupData(session);
   const primaryAdmin = church?.users?.find((user) => user.role === "church_admin") || church?.users?.[0] || null;
+  const updated = searchParams.get("updated") === "1";
 
   return (
     <div className="container-fluid">
@@ -36,6 +39,7 @@ export default function ChurchProfileRoute() {
         </div>
 
         <div className="col-12">
+          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>Church profile updated successfully.</div>
           <div className={`alert alert-danger ${error ? "" : "d-none"}`}>{error}</div>
         </div>
 

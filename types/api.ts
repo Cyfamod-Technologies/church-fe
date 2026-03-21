@@ -45,8 +45,14 @@ export interface BranchRecord {
   city?: string | null;
   state?: string | null;
   district_area?: string | null;
+  email?: string | null;
+  phone?: string | null;
   pastor_name?: string | null;
+  pastor_phone?: string | null;
+  pastor_email?: string | null;
   created_by_actor_type?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
   tag?: {
     id: number;
     name?: string | null;
@@ -86,7 +92,47 @@ export interface BranchRecord {
     email?: string | null;
     phone?: string | null;
     role?: string | null;
+    church_id?: number | null;
+    branch_id?: number | null;
   } | null;
+  assignment_history?: BranchAssignmentHistoryRecord[];
+}
+
+export interface BranchAssignmentHistoryRecord {
+  id: number;
+  action_type?: string | null;
+  from_parent?: {
+    type?: string | null;
+    id?: number | null;
+    name?: string | null;
+    code?: string | null;
+  } | null;
+  to_parent?: {
+    type?: string | null;
+    id?: number | null;
+    name?: string | null;
+    code?: string | null;
+  } | null;
+  changed_by_actor_type?: string | null;
+  changed_by_church?: {
+    id: number;
+    name?: string | null;
+    code?: string | null;
+  } | null;
+  changed_by_user?: {
+    id: number;
+    name?: string | null;
+    email?: string | null;
+  } | null;
+  note?: string | null;
+  created_at?: string | null;
+}
+
+export interface BranchTagRecord {
+  id: number;
+  church_id?: number | null;
+  name: string;
+  slug?: string | null;
 }
 
 export interface BranchStats {
@@ -99,6 +145,31 @@ export interface BranchListResponse {
   data: BranchRecord[];
   meta?: {
     stats?: BranchStats;
+  };
+}
+
+export interface BranchTagsResponse {
+  data: BranchTagRecord[];
+}
+
+export interface BranchParentOptionChurch {
+  id: number;
+  type: "church";
+  name?: string | null;
+  code?: string | null;
+}
+
+export interface BranchParentOptionBranch {
+  id: number;
+  type: "branch";
+  name?: string | null;
+  tag_name?: string | null;
+}
+
+export interface BranchParentOptionsResponse {
+  data: {
+    churches: BranchParentOptionChurch[];
+    branches: BranchParentOptionBranch[];
   };
 }
 
@@ -275,4 +346,29 @@ export interface ChurchUnitRecord {
 
 export interface ChurchUnitListResponse {
   data: ChurchUnitRecord[];
+}
+
+export interface LocationStateRecord {
+  id: number;
+  name: string;
+  slug?: string | null;
+}
+
+export interface LocationLgaRecord {
+  id: number;
+  name: string;
+  state_id?: number;
+  state?: {
+    id: number;
+    name?: string | null;
+    slug?: string | null;
+  } | null;
+}
+
+export interface StatesResponse {
+  data: LocationStateRecord[];
+}
+
+export interface LgasResponse {
+  data: LocationLgaRecord[];
 }

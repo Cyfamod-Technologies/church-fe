@@ -262,9 +262,17 @@ function getCurrentPageMeta(pathname: string, session: SessionData) {
       title: "Church Profile",
       subtitle: "View the main church profile and registration details.",
     },
+    "/church-profile-edit": {
+      title: "Edit Church Profile",
+      subtitle: "Update church profile, pastor, admin, and finance details.",
+    },
     "/service-schedule": {
       title: "Service Schedule",
       subtitle: "View configured services and recurrence details.",
+    },
+    "/service-schedule-edit": {
+      title: "Edit Service Schedule",
+      subtitle: "Update Sunday, Wednesday, WOSE, and other services.",
     },
     "/branches": {
       title: "Branches",

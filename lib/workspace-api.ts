@@ -3,13 +3,18 @@ import type { SessionData } from "@/types/session";
 import type {
   AttendanceListResponse,
   AttendanceSummaryResponse,
+  BranchRecord,
   BranchListResponse,
+  BranchParentOptionsResponse,
+  BranchTagsResponse,
   ChurchApiRecord,
   ChurchUnitListResponse,
   GuestResponseEntryListResponse,
   HomecellAttendanceListResponse,
   HomecellAttendanceSummaryResponse,
   HomecellListResponse,
+  LgasResponse,
+  StatesResponse,
   ServiceScheduleRecord,
 } from "@/types/api";
 
@@ -31,6 +36,70 @@ export async function fetchServiceSchedules(churchId: number) {
 
 export async function fetchBranches(churchId: number) {
   return apiRequest<BranchListResponse>(`branches?church_id=${churchId}`);
+}
+
+export async function fetchBranch(branchId: number) {
+  return apiRequest<{ data: BranchRecord }>(`branches/${branchId}`);
+}
+
+export async function fetchBranchTags(churchId: number) {
+  return apiRequest<BranchTagsResponse>(`branch-tags?church_id=${churchId}`);
+}
+
+export async function createBranchTag(payload: {
+  church_id: number;
+  name: string;
+}) {
+  return apiRequest<{ message: string; data: unknown }>("branch-tags", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function deleteBranchTag(branchTagId: number) {
+  return apiRequest<{ message: string }>(`branch-tags/${branchTagId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function fetchBranchParents(excludeBranchId?: number) {
+  const params = new URLSearchParams();
+
+  if (excludeBranchId) {
+    params.set("exclude_branch_id", String(excludeBranchId));
+  }
+
+  return apiRequest<BranchParentOptionsResponse>(
+    `branch-parents${params.toString() ? `?${params.toString()}` : ""}`,
+  );
+}
+
+export async function createBranch(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>("branches", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateBranch(branchId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`branches/${branchId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function reassignBranch(branchId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`branches/${branchId}/reassign`, {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function detachBranch(branchId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`branches/${branchId}/detach`, {
+    method: "POST",
+    body: payload,
+  });
 }
 
 export async function fetchHomecells(churchId: number, branchId?: number) {
@@ -118,4 +187,26 @@ export async function fetchMemberEntries(churchId: number, branchId?: number, li
 
 export async function fetchChurchUnits(churchId: number) {
   return apiRequest<ChurchUnitListResponse>(`church-units?church_id=${churchId}`);
+}
+
+export async function updateChurchProfile(churchId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`churches/${churchId}/profile`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function updateServiceSchedules(churchId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`churches/${churchId}/service-schedules`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export async function fetchStates() {
+  return apiRequest<StatesResponse>("locations/states");
+}
+
+export async function fetchLgasByStateSlug(stateSlug: string) {
+  return apiRequest<LgasResponse>(`locations/lgas?state_slug=${encodeURIComponent(stateSlug)}`);
 }
