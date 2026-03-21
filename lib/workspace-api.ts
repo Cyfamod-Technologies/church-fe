@@ -138,6 +138,13 @@ export async function fetchAttendanceRecords(churchId: number, branchId?: number
   return apiRequest<AttendanceListResponse>(`attendance?${params.toString()}`);
 }
 
+export async function createAttendanceRecord(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>("attendance", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export async function fetchHomecellAttendanceSummary(churchId: number, branchId?: number, homecellId?: number, period = "weekly") {
   const params = new URLSearchParams({
     church_id: String(churchId),

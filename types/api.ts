@@ -34,6 +34,7 @@ export interface ServiceScheduleRecord {
   service_time?: string | null;
   recurrence_type?: string | null;
   recurrence_detail?: string | null;
+  sort_order?: number | null;
 }
 
 export interface BranchRecord {
@@ -216,9 +217,17 @@ export interface AttendanceRecord {
   service_date?: string | null;
   service_label?: string | null;
   service_type?: string | null;
+  male_count?: number;
+  female_count?: number;
+  children_count?: number;
   total_count?: number;
   first_timers_count?: number;
   new_converts_count?: number;
+  rededications_count?: number;
+  main_offering?: number | null;
+  tithe?: number | null;
+  special_offering?: number | null;
+  notes?: string | null;
   branch?: {
     id: number;
     name?: string | null;
