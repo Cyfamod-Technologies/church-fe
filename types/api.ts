@@ -313,11 +313,16 @@ export interface HomecellAttendanceSummaryResponse {
 
 export interface GuestResponseEntryRecord {
   id: number;
+  church_id?: number | null;
   entry_type?: string | null;
   full_name?: string | null;
   phone?: string | null;
   email?: string | null;
+  gender?: string | null;
   service_date?: string | null;
+  invited_by?: string | null;
+  address?: string | null;
+  notes?: string | null;
   foundation_class_completed?: boolean;
   baptism_completed?: boolean;
   holy_ghost_baptism_completed?: boolean;
@@ -339,6 +344,7 @@ export interface GuestResponseEntryRecord {
     code?: string | null;
     status?: string | null;
   }>;
+  created_at?: string | null;
 }
 
 export interface GuestResponseEntryListResponse {
@@ -347,14 +353,26 @@ export interface GuestResponseEntryListResponse {
 
 export interface ChurchUnitRecord {
   id: number;
+  church_id?: number | null;
   name?: string | null;
   code?: string | null;
   status?: string | null;
   description?: string | null;
+  members_count?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface ChurchUnitListResponse {
   data: ChurchUnitRecord[];
+  meta?: {
+    stats?: {
+      total_units?: number;
+      active_units?: number;
+      inactive_units?: number;
+      member_assignments?: number;
+    };
+  };
 }
 
 export interface LocationStateRecord {

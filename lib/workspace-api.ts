@@ -9,6 +9,7 @@ import type {
   BranchTagsResponse,
   ChurchApiRecord,
   ChurchUnitListResponse,
+  GuestResponseEntryRecord,
   GuestResponseEntryListResponse,
   HomecellAttendanceListResponse,
   HomecellAttendanceSummaryResponse,
@@ -192,8 +193,40 @@ export async function fetchMemberEntries(churchId: number, branchId?: number, li
   return apiRequest<GuestResponseEntryListResponse>(`guest-response-entries?${params.toString()}`);
 }
 
+export async function fetchMemberEntry(entryId: number) {
+  return apiRequest<{ data: GuestResponseEntryRecord }>(`guest-response-entries/${entryId}`);
+}
+
+export async function createMemberEntry(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>("guest-response-entries", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateMemberEntry(entryId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`guest-response-entries/${entryId}`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
 export async function fetchChurchUnits(churchId: number) {
   return apiRequest<ChurchUnitListResponse>(`church-units?church_id=${churchId}`);
+}
+
+export async function createChurchUnit(payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>("church-units", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export async function updateChurchUnit(unitId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: unknown }>(`church-units/${unitId}`, {
+    method: "PUT",
+    body: payload,
+  });
 }
 
 export async function updateChurchProfile(churchId: number, payload: Record<string, unknown>) {
