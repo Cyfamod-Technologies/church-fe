@@ -34,6 +34,20 @@ export async function fetchChurch(churchId: number) {
   return apiRequest<{ data: ChurchApiRecord }>(`churches/${churchId}`);
 }
 
+export async function updateHomecellSchedule(churchId: number, payload: {
+  homecell_schedule: {
+    locked: boolean;
+    default_day: string | null;
+    default_time: string | null;
+    monthly_dates: string[];
+  };
+}) {
+  return apiRequest<{ message: string; data: { church: ChurchApiRecord } }>(`churches/${churchId}/homecell-schedule`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
 export async function fetchServiceSchedules(churchId: number) {
   return apiRequest<{ data: ServiceScheduleRecord[] }>(`churches/${churchId}/service-schedules`);
 }

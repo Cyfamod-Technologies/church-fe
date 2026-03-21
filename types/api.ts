@@ -14,6 +14,10 @@ export interface ChurchApiRecord {
   pastor_email?: string | null;
   finance_enabled?: boolean;
   special_services_enabled?: boolean;
+  homecell_schedule_locked?: boolean;
+  homecell_default_day?: string | null;
+  homecell_default_time?: string | null;
+  homecell_monthly_dates?: string[] | null;
   created_at?: string | null;
   updated_at?: string | null;
   users?: Array<{
@@ -195,6 +199,13 @@ export interface HomecellRecord {
     id: number;
     name?: string | null;
     code?: string | null;
+  } | null;
+  schedule_config?: {
+    locked?: boolean;
+    default_day?: string | null;
+    default_time?: string | null;
+    monthly_dates?: string[];
+    inherited?: boolean;
   } | null;
   leaders?: HomecellLeaderRecord[];
   created_at?: string | null;
