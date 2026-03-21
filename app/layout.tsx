@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "LFC Church Management",
   description: "Next.js TypeScript frontend for the LFC church management workspace.",
+  icons: {
+    icon: "/assets/images/logo/favicon.png",
+    shortcut: "/assets/images/logo/favicon.png",
+  },
 };
 
 export default function RootLayout({
