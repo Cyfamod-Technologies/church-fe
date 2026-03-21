@@ -11,6 +11,7 @@ import type {
   ChurchUnitListResponse,
   GuestResponseEntryRecord,
   GuestResponseEntryListResponse,
+  HomecellLeaderProfileRecord,
   HomecellAttendanceRecord,
   HomecellAttendanceListResponse,
   HomecellAttendanceSummaryResponse,
@@ -117,6 +118,17 @@ export async function fetchHomecells(churchId: number, branchId?: number) {
 
 export async function fetchHomecell(homecellId: number) {
   return apiRequest<{ data: HomecellRecord }>(`homecells/${homecellId}`);
+}
+
+export async function fetchHomecellLeaderProfile(homecellLeaderId: number) {
+  return apiRequest<{ data: HomecellLeaderProfileRecord }>(`homecell-leaders/${homecellLeaderId}`);
+}
+
+export async function updateHomecellLeaderProfile(homecellLeaderId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: HomecellLeaderProfileRecord }>(`homecell-leaders/${homecellLeaderId}`, {
+    method: "PUT",
+    body: payload,
+  });
 }
 
 export async function createHomecell(payload: Record<string, unknown>) {

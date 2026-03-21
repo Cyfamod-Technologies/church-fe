@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "id": "row-1",
+      "name": "Ava Johnson",
+      "position": "Product Manager",
+      "office": "Lagos",
+      "extn": "5421",
+      "salary": "$168,000"
+    },
+    {
+      "id": "row-2",
+      "name": "Noah Smith",
+      "position": "Backend Engineer",
+      "office": "Abuja",
+      "extn": "3148",
+      "salary": "$142,500"
+    },
+    {
+      "id": "row-3",
+      "name": "Mia Brown",
+      "position": "UX Designer",
+      "office": "London",
+      "extn": "7782",
+      "salary": "$154,200"
+    },
+    {
+      "id": "row-4",
+      "name": "Ethan Davis",
+      "position": "Data Analyst",
+      "office": "Nairobi",
+      "extn": "1964",
+      "salary": "$129,900"
+    }
+  ]
+}

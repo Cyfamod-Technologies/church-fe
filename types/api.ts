@@ -219,6 +219,19 @@ export interface HomecellLeaderRecord {
   } | null;
 }
 
+export interface HomecellLeaderProfileRecord extends HomecellLeaderRecord {
+  homecell?: {
+    id: number;
+    name?: string | null;
+    code?: string | null;
+    branch?: {
+      id: number;
+      name?: string | null;
+      code?: string | null;
+    } | null;
+  } | null;
+}
+
 export interface HomecellStats {
   total_homecells?: number;
   assigned_to_branches?: number;
