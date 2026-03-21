@@ -29,22 +29,7 @@ a {
   display: block;
 }
 
-.app-wrapper nav.no-hover-semi-nav:hover {
-  width: var(--sidebar-width);
-}
-
-.app-wrapper nav.no-hover-semi-nav:hover .app-logo {
-  width: var(--sidebar-width);
-}
-
-.app-wrapper nav.no-hover-semi-nav:hover .app-logo .nav-profile .ps-2 {
-  display: block;
-}
-
-.app-wrapper nav.no-hover-semi-nav:hover .app-nav {
-  overflow: auto;
-}
-
-.app-wrapper nav.no-hover-semi-nav:hover .app-nav .main-nav > li:not(.menu-title) ul {
-  display: block;
+.app-wrapper nav .app-nav .main-nav > li > a::after {
+  display: none !important;
+  content: none !important;
 }

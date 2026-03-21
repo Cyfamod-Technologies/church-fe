@@ -95,7 +95,9 @@ export function AppShell({ session, children }: AppShellProps) {
 
           <span
             className="bg-light-primary toggle-semi-nav d-flex-center"
-            onClick={() => {
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
               setIsSemiNav(false);
             }}
           >
@@ -183,11 +185,9 @@ export function AppShell({ session, children }: AppShellProps) {
                 <div className="col-6 col-sm-6 d-flex align-items-center header-left p-0">
                   <span
                     className="header-toggle"
-                    onClick={() => {
-                      if (isLeaderWorkspace) {
-                        return;
-                      }
-
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
                       setIsSemiNav((current) => !current);
                     }}
                   >
