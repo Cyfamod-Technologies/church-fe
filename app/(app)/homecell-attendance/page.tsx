@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { useSessionContext } from "@/components/providers/auth-guard";
-import { getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
+import { formatLongDate, getHomecellScheduleGate, getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
 import { isHomecellLeaderSession } from "@/lib/session";
 import {
   createHomecellAttendance,
@@ -18,7 +18,7 @@ import {
   getChurchId,
   updateHomecellAttendance,
 } from "@/lib/workspace-api";
-import type { HomecellAttendanceRecord, HomecellAttendanceSummaryResponse, HomecellRecord } from "@/types/api";
+import type { ChurchApiRecord, HomecellAttendanceRecord, HomecellAttendanceSummaryResponse, HomecellRecord } from "@/types/api";
 
 interface AttendanceFormState {
   homecell_id: string;
@@ -62,6 +62,7 @@ export default function HomecellAttendanceRoute() {
   const returnTo = searchParams.get("return_to") || "";
 
   const [homecells, setHomecells] = useState<HomecellRecord[]>([]);
+  const [church, setChurch] = useState<ChurchApiRecord | null>(null);
   const [currentRecorder, setCurrentRecorder] = useState<RecorderRecord | null>(null);
   const [form, setForm] = useState<AttendanceFormState>(emptyForm(activeHomecellId ? String(activeHomecellId) : ""));
   const [currentEditRecordId, setCurrentEditRecordId] = useState<number | null>(null);
@@ -70,16 +71,22 @@ export default function HomecellAttendanceRoute() {
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditing = Boolean(currentEditRecordId);
 
   const selectedHomecell = useMemo(() => (
     homecells.find((homecell) => homecell.id === Number(form.homecell_id || 0)) || null
   ), [form.homecell_id, homecells]);
+  const scheduleGate = useMemo(() => getHomecellScheduleGate(church), [church]);
+  const lockedMeetingDate = scheduleGate.locked;
+  const effectiveMeetingDate = scheduleGate.locked
+    ? (isEditing ? form.meeting_date : (scheduleGate.activeDate || ""))
+    : form.meeting_date;
+  const canSaveRecord = isEditing || scheduleGate.canAdd;
 
   const totalAttendance = useMemo(() => (
     toPositiveNumber(form.male_count) + toPositiveNumber(form.female_count) + toPositiveNumber(form.children_count)
   ), [form.children_count, form.female_count, form.male_count]);
 
-  const isEditing = Boolean(currentEditRecordId);
   const recorderLabel = currentRecorder?.name ? `Recorder: ${currentRecorder.name}` : "Recorder: Active session";
   const branchDisplay = selectedHomecell
     ? (selectedHomecell.branch?.name || "No branch assigned")
@@ -106,9 +113,12 @@ export default function HomecellAttendanceRoute() {
         }
 
         const nextHomecells = homecellsResponse.data || [];
-        const churchUsers = churchResponse.data?.users || [];
+        const nextChurch = churchResponse.data || null;
+        const churchUsers = nextChurch?.users || [];
+        const nextScheduleGate = getHomecellScheduleGate(nextChurch);
 
         setHomecells(nextHomecells);
+        setChurch(nextChurch);
         setSummary(summaryResponse.data || null);
         setCurrentRecorder(resolveRecorder(session, churchUsers));
 
@@ -122,7 +132,10 @@ export default function HomecellAttendanceRoute() {
           fillFormFromRecord(recordResponse.data, setForm, setCurrentEditRecordId);
           setSuccessMessage("Selected attendance record loaded for editing.");
         } else {
-          setForm(emptyForm(activeHomecellId ? String(activeHomecellId) : ""));
+          setForm({
+            ...emptyForm(activeHomecellId ? String(activeHomecellId) : ""),
+            meeting_date: nextScheduleGate.locked ? (nextScheduleGate.activeDate || "") : getTodayDate(),
+          });
           setCurrentEditRecordId(null);
         }
       } catch (loadError) {
@@ -144,10 +157,13 @@ export default function HomecellAttendanceRoute() {
   }, [activeHomecellId, branchId, churchId, isHomecellLeader, preloadRecordId, session, session.homecell]);
 
   useEffect(() => {
-    if (!form.homecell_id || !form.meeting_date || preloadRecordId) {
+    const meetingDateToCheck = lockedMeetingDate ? scheduleGate.activeDate : form.meeting_date;
+
+    if (!form.homecell_id || !meetingDateToCheck || preloadRecordId) {
       return;
     }
 
+    const lookupMeetingDate = meetingDateToCheck;
     let active = true;
 
     async function syncExistingRecord() {
@@ -156,7 +172,7 @@ export default function HomecellAttendanceRoute() {
           churchId,
           Number(form.homecell_id),
           selectedHomecell?.branch?.id,
-          form.meeting_date,
+          lookupMeetingDate,
         );
 
         if (!active || !existing) {
@@ -177,7 +193,7 @@ export default function HomecellAttendanceRoute() {
     return () => {
       active = false;
     };
-  }, [churchId, form.homecell_id, form.meeting_date, preloadRecordId, selectedHomecell?.branch?.id]);
+  }, [churchId, form.homecell_id, form.meeting_date, lockedMeetingDate, preloadRecordId, scheduleGate.activeDate, selectedHomecell?.branch?.id]);
 
   async function reloadSummary() {
     const summaryResponse = await fetchHomecellAttendanceSummary(
@@ -197,7 +213,10 @@ export default function HomecellAttendanceRoute() {
   }
 
   function resetForm() {
-    setForm(emptyForm(activeHomecellId ? String(activeHomecellId) : ""));
+    setForm({
+      ...emptyForm(activeHomecellId ? String(activeHomecellId) : ""),
+      meeting_date: scheduleGate.locked ? (scheduleGate.activeDate || "") : getTodayDate(),
+    });
     setCurrentEditRecordId(null);
     if (preloadRecordId || returnTo) {
       router.replace("/homecell-attendance");
@@ -205,12 +224,18 @@ export default function HomecellAttendanceRoute() {
   }
 
   async function handleHomecellOrDateChange(key: "homecell_id" | "meeting_date", value: string) {
+    if (key === "meeting_date" && lockedMeetingDate) {
+      return;
+    }
+
     updateField(key, value as AttendanceFormState[typeof key]);
     setSuccessMessage("");
     setErrorMessage("");
 
     const nextHomecellId = key === "homecell_id" ? value : form.homecell_id;
-    const nextMeetingDate = key === "meeting_date" ? value : form.meeting_date;
+    const nextMeetingDate = key === "meeting_date"
+      ? value
+      : (lockedMeetingDate ? (scheduleGate.activeDate || "") : form.meeting_date);
 
     if (!nextHomecellId || !nextMeetingDate || preloadRecordId) {
       return;
@@ -233,7 +258,7 @@ export default function HomecellAttendanceRoute() {
         setForm({
           ...emptyForm(activeHomecellId ? String(activeHomecellId) : ""),
           homecell_id: nextHomecellId,
-          meeting_date: nextMeetingDate,
+          meeting_date: lockedMeetingDate ? (scheduleGate.activeDate || "") : nextMeetingDate,
         });
       }
     } catch (loadError) {
@@ -250,8 +275,13 @@ export default function HomecellAttendanceRoute() {
       return;
     }
 
-    if (!form.meeting_date) {
+    if (!effectiveMeetingDate) {
       setErrorMessage("Choose the meeting date for this record.");
+      return;
+    }
+
+    if (!canSaveRecord) {
+      setErrorMessage(scheduleGate.message || "Attendance is locked for now. Wait till the next homecell date.");
       return;
     }
 
@@ -265,7 +295,7 @@ export default function HomecellAttendanceRoute() {
           churchId,
           selectedHomecell.id,
           selectedHomecell.branch?.id,
-          form.meeting_date,
+          effectiveMeetingDate,
         );
 
         if (existing) {
@@ -279,7 +309,7 @@ export default function HomecellAttendanceRoute() {
         branch_id: selectedHomecell.branch?.id || null,
         homecell_id: selectedHomecell.id,
         recorded_by_user_id: session.user?.id || currentRecorder?.id || null,
-        meeting_date: form.meeting_date,
+        meeting_date: effectiveMeetingDate,
         male_count: toPositiveNumber(form.male_count),
         female_count: toPositiveNumber(form.female_count),
         children_count: toPositiveNumber(form.children_count),
@@ -321,7 +351,7 @@ export default function HomecellAttendanceRoute() {
           <div className="card">
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
+                  <div>
                   <h4 className="mb-1">Record Homecell Attendance</h4>
                   <p className="text-secondary mb-0">Submit a single attendance record per homecell per day. Existing same-day records switch into edit mode automatically.</p>
                 </div>
@@ -378,6 +408,16 @@ export default function HomecellAttendanceRoute() {
             </div>
             <div className="card-body">
               <div className="row">
+                {scheduleGate.locked ? (
+                  <div className="col-12">
+                    <div className={`alert ${scheduleGate.canAdd || isEditing ? "alert-success" : "alert-warning"}`}>
+                      <i className={`ti ${scheduleGate.canAdd || isEditing ? "ti-calendar-check" : "ti-lock"} me-2`} />
+                      {isEditing
+                        ? `Editing record for ${formatLongDate(form.meeting_date)}.`
+                        : (scheduleGate.message || "Attendance follows the church homecell schedule.")}
+                    </div>
+                  </div>
+                ) : null}
                 <div className="col-md-6">
                   <div className="mb-3">
                     <label className="form-label" htmlFor="attendanceHomecellInput">Homecell</label>
@@ -397,7 +437,14 @@ export default function HomecellAttendanceRoute() {
                     </select>
                   </div>
                 </div>
-                <Field className="col-md-6" label="Meeting Date" type="date" value={form.meeting_date} onChange={(value) => void handleHomecellOrDateChange("meeting_date", value)} />
+                <Field
+                  className="col-md-6"
+                  disabled={lockedMeetingDate}
+                  label="Meeting Date"
+                  type="date"
+                  value={effectiveMeetingDate}
+                  onChange={(value) => void handleHomecellOrDateChange("meeting_date", value)}
+                />
                 <Field className="col-md-6" disabled label="Assigned Branch" value={branchDisplay} onChange={() => undefined} />
                 <Field className="col-md-6" disabled label="Total Attendance" value={String(totalAttendance)} onChange={() => undefined} />
                 <CountField className="col-md-4" label="Male" value={form.male_count} onChange={(value) => updateField("male_count", value)} />
@@ -428,7 +475,7 @@ export default function HomecellAttendanceRoute() {
                     Cancel Edit
                   </button>
                 ) : null}
-                <button className="btn btn-primary" disabled={isSubmitting} onClick={() => void handleSubmit()} type="button">
+                <button className="btn btn-primary" disabled={isSubmitting || !canSaveRecord} onClick={() => void handleSubmit()} type="button">
                   <i className={`ti ${isSubmitting ? "ti-loader" : "ti-device-floppy"} me-1`} />
                   {isEditing ? (isSubmitting ? "Updating..." : "Update Attendance") : (isSubmitting ? "Saving..." : "Save Attendance")}
                 </button>
@@ -447,6 +494,17 @@ export default function HomecellAttendanceRoute() {
                 <i className="ti ti-info-circle me-2" />
                 <strong>One record per day:</strong> if the selected homecell already has a record for the chosen date, this page opens it in edit mode instead of creating a duplicate.
               </div>
+              {scheduleGate.locked ? (
+                <div className={`alert ${scheduleGate.canAdd ? "alert-success" : "alert-warning"} mt-3 mb-0`}>
+                  <i className={`ti ${scheduleGate.canAdd ? "ti-calendar-event" : "ti-hourglass-low"} me-2`} />
+                  <strong>Schedule lock:</strong>{" "}
+                  {scheduleGate.activeDate
+                    ? (scheduleGate.canAdd
+                      ? `attendance is open for ${formatLongDate(scheduleGate.activeDate)} only.`
+                      : `wait till ${formatLongDate(scheduleGate.activeDate)} to add the next record.`)
+                    : "wait for admin to set the next homecell date."}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>

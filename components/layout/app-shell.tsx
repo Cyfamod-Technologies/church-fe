@@ -16,22 +16,24 @@ interface AppShellProps {
 export function AppShell({ session, children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const isLeaderWorkspace = isHomecellLeaderSession(session);
   const navGroups = getNavGroups(session);
   const initialOpenGroups = useMemo(() => buildGroupState(navGroups, pathname), [navGroups, pathname]);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(initialOpenGroups);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSemiNav, setIsSemiNav] = useState(false);
   const profileMenuRef = useRef<HTMLLIElement | null>(null);
-  const workspaceName = isHomecellLeaderSession(session)
+  const workspaceName = isLeaderWorkspace
     ? `${session.church?.name || "Church"} / ${session.homecell?.name || "Homecell"}`
     : session.branch?.name
       ? `${session.church?.name || "Church"} / ${session.branch.name}`
       : (session.church?.name || "Church Workspace");
   const userName = resolveProfileUserName(session);
   const currentPageMeta = getCurrentPageMeta(pathname, session);
-  const headerWorkspaceName = isHomecellLeaderSession(session)
+  const headerWorkspaceName = isLeaderWorkspace
     ? (session.homecell?.name || session.church?.name || "Church Workspace")
     : (session.church?.name || "Church Workspace");
+  const allowHoverSemiNav = !isLeaderWorkspace;
 
   useEffect(() => {
     setOpenGroups(buildGroupState(navGroups, pathname));
@@ -39,6 +41,11 @@ export function AppShell({ session, children }: AppShellProps) {
 
   useEffect(() => {
     const updateNavMode = () => {
+      if (isLeaderWorkspace) {
+        setIsSemiNav(false);
+        return;
+      }
+
       setIsSemiNav(window.innerWidth < 1199);
     };
 
@@ -48,7 +55,7 @@ export function AppShell({ session, children }: AppShellProps) {
     return () => {
       window.removeEventListener("resize", updateNavMode);
     };
-  }, []);
+  }, [isLeaderWorkspace]);
 
   useEffect(() => {
     setIsProfileOpen(false);
@@ -82,7 +89,7 @@ export function AppShell({ session, children }: AppShellProps) {
 
   return (
     <div className="app-wrapper">
-      <nav className={isSemiNav ? "semi-nav" : ""} id="church-nav">
+      <nav className={`${isSemiNav ? "semi-nav" : ""} ${allowHoverSemiNav ? "" : "no-hover-semi-nav"}`.trim()} id="church-nav">
         <div className="app-logo">
           <Link className="logo d-inline-block" href="/dashboard" />
 
@@ -177,6 +184,10 @@ export function AppShell({ session, children }: AppShellProps) {
                   <span
                     className="header-toggle"
                     onClick={() => {
+                      if (isLeaderWorkspace) {
+                        return;
+                      }
+
                       setIsSemiNav((current) => !current);
                     }}
                   >

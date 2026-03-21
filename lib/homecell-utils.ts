@@ -1,4 +1,4 @@
-import type { HomecellLeaderRecord, HomecellRecord } from "@/types/api";
+import type { ChurchApiRecord, HomecellLeaderRecord, HomecellRecord } from "@/types/api";
 
 export interface FlattenedHomecellLeader extends HomecellLeaderRecord {
   homecell_id: number;
@@ -93,4 +93,71 @@ export function percentage(part: number, total: number) {
   }
 
   return `${((part / total) * 100).toFixed(1)}% of total`;
+}
+
+export function normalizeHomecellMonthlyDates(dates?: string[] | null) {
+  return [...new Set((dates || []).filter((value) => /^\d{4}-\d{2}-\d{2}$/.test(value)))].sort();
+}
+
+export function getNextHomecellMeetingDate(dates?: string[] | null, today = getTodayDate()) {
+  return normalizeHomecellMonthlyDates(dates).find((date) => date >= today) || null;
+}
+
+export function formatLongDate(date?: string | null) {
+  if (!date) {
+    return "--";
+  }
+
+  const value = new Date(`${date}T00:00:00`);
+
+  if (Number.isNaN(value.getTime())) {
+    return date;
+  }
+
+  return value.toLocaleDateString("en-NG", {
+    weekday: "long",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export function getHomecellScheduleGate(church?: ChurchApiRecord | null, today = getTodayDate()) {
+  const locked = Boolean(church?.homecell_schedule_locked);
+  const monthlyDates = normalizeHomecellMonthlyDates(church?.homecell_monthly_dates);
+  const activeDate = getNextHomecellMeetingDate(monthlyDates, today);
+
+  if (!locked) {
+    return {
+      locked: false,
+      activeDate: null,
+      message: "",
+      canAdd: true,
+    };
+  }
+
+  if (!monthlyDates.length || !activeDate) {
+    return {
+      locked: true,
+      activeDate: null,
+      message: "Attendance is locked right now. Wait till the next homecell date is set by admin.",
+      canAdd: false,
+    };
+  }
+
+  if (activeDate !== today) {
+    return {
+      locked: true,
+      activeDate,
+      message: `Attendance is locked for now. Wait till ${formatLongDate(activeDate)}.`,
+      canAdd: false,
+    };
+  }
+
+  return {
+    locked: true,
+    activeDate,
+    message: `Attendance is open for ${formatLongDate(activeDate)} only.`,
+    canAdd: true,
+  };
 }
