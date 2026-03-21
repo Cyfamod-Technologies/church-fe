@@ -6,6 +6,7 @@
   };
   const normalizedPage = pageAliases[currentPage] || currentPage;
   const sessionKey = "lfc_session";
+  const sessionDurationMs = 5 * 60 * 60 * 1000;
   const session = getSession();
   const homecellLeaderAllowedPages = [
     "homecell-leader-dashboard.html",
@@ -173,7 +174,19 @@
     }
 
     try {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+
+      if (parsed && !parsed.session_expires_at) {
+        window.localStorage.removeItem(sessionKey);
+        return null;
+      }
+
+      if (parsed && parsed.session_expires_at && Date.now() >= Number(parsed.session_expires_at)) {
+        window.localStorage.removeItem(sessionKey);
+        return null;
+      }
+
+      return parsed;
     } catch (error) {
       window.localStorage.removeItem(sessionKey);
       return null;
@@ -181,6 +194,15 @@
   }
 
   function hasValidSession(value) {
+    if (
+      value &&
+      value.session_expires_at &&
+      Date.now() >= Number(value.session_expires_at)
+    ) {
+      clearSession();
+      return false;
+    }
+
     return Boolean(
       value &&
       value.user &&

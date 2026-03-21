@@ -12,6 +12,13 @@ export interface SessionChurch {
   id: number;
   name?: string | null;
   code?: string | null;
+  users?: Array<{
+    id: number;
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    role?: UserRole | null;
+  }> | null;
 }
 
 export interface SessionBranch {
@@ -56,6 +63,8 @@ export interface SessionData {
   branch?: SessionBranch | null;
   homecell?: SessionHomecell | null;
   homecell_leader?: SessionHomecellLeader | null;
+  session_issued_at?: number | null;
+  session_expires_at?: number | null;
 }
 
 export interface LoginResponse {

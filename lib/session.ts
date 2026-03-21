@@ -4,6 +4,7 @@ import type { SessionData } from "@/types/session";
 
 const SESSION_KEY = "lfc_session";
 const SESSION_EVENT = "lfc-session-change";
+const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
 
 export function getSessionRaw(): string | null {
   if (typeof window === "undefined") {
@@ -19,7 +20,25 @@ export function parseSession(raw: string | null): SessionData | null {
   }
 
   try {
-    return JSON.parse(raw) as SessionData;
+    const session = JSON.parse(raw) as SessionData;
+
+    if (session && !session.session_expires_at) {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(SESSION_KEY);
+      }
+
+      return null;
+    }
+
+    if (session?.session_expires_at && Date.now() >= Number(session.session_expires_at)) {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(SESSION_KEY);
+      }
+
+      return null;
+    }
+
+    return session;
   } catch {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem(SESSION_KEY);
@@ -38,6 +57,10 @@ export function saveSession(data: SessionData): void {
   }
 
   const existing = getSession() || {};
+  const now = Date.now();
+  const hasExistingExpiry = Boolean(
+    existing.session_expires_at && Number(existing.session_expires_at) > now,
+  );
   const nextSession: SessionData = {
     ...existing,
     ...data,
@@ -50,6 +73,12 @@ export function saveSession(data: SessionData): void {
     homecell_leader: Object.prototype.hasOwnProperty.call(data, "homecell_leader")
       ? data.homecell_leader
       : existing.homecell_leader,
+    session_issued_at: hasExistingExpiry
+      ? Number(existing.session_issued_at || now)
+      : now,
+    session_expires_at: hasExistingExpiry
+      ? Number(existing.session_expires_at)
+      : now + SESSION_DURATION_MS,
   };
 
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
@@ -84,7 +113,11 @@ export function subscribeToSession(listener: () => void): () => void {
 }
 
 export function hasValidSession(session: SessionData | null): session is SessionData {
-  return Boolean(session?.user?.id && session?.church?.id);
+  return Boolean(
+    session?.user?.id &&
+    session?.church?.id &&
+    (!session.session_expires_at || Date.now() < Number(session.session_expires_at)),
+  );
 }
 
 export function isHomecellLeaderSession(session: SessionData | null): boolean {

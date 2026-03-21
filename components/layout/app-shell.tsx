@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { clearSession, isHomecellLeaderSession } from "@/lib/session";
 import { getNavGroups } from "@/lib/navigation";
 import type { SessionData } from "@/types/session";
@@ -21,13 +21,17 @@ export function AppShell({ session, children }: AppShellProps) {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(initialOpenGroups);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSemiNav, setIsSemiNav] = useState(false);
+  const profileMenuRef = useRef<HTMLLIElement | null>(null);
   const workspaceName = isHomecellLeaderSession(session)
     ? `${session.church?.name || "Church"} / ${session.homecell?.name || "Homecell"}`
     : session.branch?.name
       ? `${session.church?.name || "Church"} / ${session.branch.name}`
       : (session.church?.name || "Church Workspace");
-  const userName = session.user?.name || (isHomecellLeaderSession(session) ? "Homecell Leader" : "Church Admin");
+  const userName = resolveProfileUserName(session);
   const currentPageMeta = getCurrentPageMeta(pathname, session);
+  const headerWorkspaceName = isHomecellLeaderSession(session)
+    ? (session.homecell?.name || session.church?.name || "Church Workspace")
+    : (session.church?.name || "Church Workspace");
 
   useEffect(() => {
     setOpenGroups(buildGroupState(navGroups, pathname));
@@ -43,6 +47,36 @@ export function AppShell({ session, children }: AppShellProps) {
 
     return () => {
       window.removeEventListener("resize", updateNavMode);
+    };
+  }, []);
+
+  useEffect(() => {
+    setIsProfileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    function handleOutsideProfileClick(event: MouseEvent) {
+      if (!profileMenuRef.current) {
+        return;
+      }
+
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsProfileOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideProfileClick);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideProfileClick);
+      document.removeEventListener("keydown", handleEscape);
     };
   }, []);
 
@@ -179,11 +213,12 @@ export function AppShell({ session, children }: AppShellProps) {
                         </span>
                       </Link>
                     </li>
-                    <li className="header-profile">
+                    <li className="header-profile dropdown position-relative" ref={profileMenuRef}>
                       <a
                         aria-expanded={isProfileOpen ? "true" : "false"}
                         className="d-block head-icon"
-                        href="#profile-menu"
+                        data-bs-toggle="dropdown"
+                        href="#"
                         onClick={(event) => {
                           event.preventDefault();
                           setIsProfileOpen((current) => !current);
@@ -191,14 +226,10 @@ export function AppShell({ session, children }: AppShellProps) {
                       >
                         <img alt="avatar" className="b-r-10 h-35 w-35" src="/assets/images/avatar/1.png" />
                       </a>
-                      <ul className={`dropdown-menu profile-dropdown p-2 ${isProfileOpen ? "show" : ""}`}>
+                      <ul className={`dropdown-menu dropdown-menu-end profile-dropdown p-2 ${isProfileOpen ? "show" : ""}`}>
                         <li className="dropdown-item-text">
                           <h6 className="mb-0">{userName}</h6>
-                          <p className="text-muted mb-0 f-s-12">
-                            {isHomecellLeaderSession(session)
-                              ? (session.homecell?.name || session.church?.name || "Church Workspace")
-                              : (session.church?.name || "Church Workspace")}
-                          </p>
+                          <p className="text-muted mb-0 f-s-12">{headerWorkspaceName}</p>
                         </li>
                         <li>
                           <hr className="dropdown-divider" />
@@ -214,8 +245,8 @@ export function AppShell({ session, children }: AppShellProps) {
                           <hr className="dropdown-divider" />
                         </li>
                         <li>
-                          <Link className="dropdown-item" href={isHomecellLeaderSession(session) ? "/profile" : "/administration"}>
-                            {isHomecellLeaderSession(session) ? "My Profile" : "Users"}
+                          <Link className="dropdown-item" href="/profile">
+                            {isHomecellLeaderSession(session) ? "My Profile" : "Settings"}
                           </Link>
                         </li>
                         <li>
@@ -248,6 +279,25 @@ export function AppShell({ session, children }: AppShellProps) {
       </div>
     </div>
   );
+}
+
+function resolveProfileUserName(session: SessionData): string {
+  if (isHomecellLeaderSession(session)) {
+    return session.homecell_leader?.name || session.user?.name || "Homecell Leader";
+  }
+
+  const churchUsers = Array.isArray(session.church?.users) ? session.church?.users : [];
+  const churchAdmin = churchUsers.find((user) => user?.role === "church_admin" && user?.name);
+
+  if (churchAdmin?.name) {
+    return churchAdmin.name;
+  }
+
+  if (session.user?.role === "church_admin" && session.user?.name) {
+    return session.user.name;
+  }
+
+  return session.user?.name || "Church Admin";
 }
 
 function getCurrentPageMeta(pathname: string, session: SessionData) {

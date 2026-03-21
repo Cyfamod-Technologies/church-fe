@@ -1,6 +1,7 @@
 (function (window) {
     const config = window.LFC_APP_CONFIG;
     const sessionKey = 'lfc_session';
+    const sessionDurationMs = 5 * 60 * 60 * 1000;
 
     async function request(path, options) {
         const response = await fetch(config.buildApiUrl(path), {
@@ -40,7 +41,19 @@
         }
 
         try {
-            return JSON.parse(raw);
+            const session = JSON.parse(raw);
+
+            if (session && !session.session_expires_at) {
+                window.localStorage.removeItem(sessionKey);
+                return null;
+            }
+
+            if (session && session.session_expires_at && Date.now() >= Number(session.session_expires_at)) {
+                window.localStorage.removeItem(sessionKey);
+                return null;
+            }
+
+            return session;
         } catch (error) {
             window.localStorage.removeItem(sessionKey);
             return null;
@@ -49,6 +62,14 @@
 
     function saveSession(data) {
         const existing = getSession() || {};
+        const now = Date.now();
+        const hasExistingExpiry = existing && existing.session_expires_at && Number(existing.session_expires_at) > now;
+        const sessionIssuedAt = hasExistingExpiry && existing.session_issued_at
+            ? Number(existing.session_issued_at)
+            : now;
+        const sessionExpiresAt = hasExistingExpiry
+            ? Number(existing.session_expires_at)
+            : now + sessionDurationMs;
         const nextSession = {
             ...existing,
             ...data,
@@ -57,6 +78,8 @@
             branch: data && Object.prototype.hasOwnProperty.call(data, 'branch') ? data.branch : existing.branch,
             homecell: data && Object.prototype.hasOwnProperty.call(data, 'homecell') ? data.homecell : existing.homecell,
             homecell_leader: data && Object.prototype.hasOwnProperty.call(data, 'homecell_leader') ? data.homecell_leader : existing.homecell_leader,
+            session_issued_at: sessionIssuedAt,
+            session_expires_at: sessionExpiresAt,
         };
 
         window.localStorage.setItem(sessionKey, JSON.stringify(nextSession));
