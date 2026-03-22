@@ -23,6 +23,8 @@ export function AppShell({ session, children }: AppShellProps) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isSemiNav, setIsSemiNav] = useState(false);
   const profileMenuRef = useRef<HTMLLIElement | null>(null);
+  const navRef = useRef<HTMLElement | null>(null);
+  const wasMobileViewportRef = useRef<boolean | null>(null);
   const workspaceName = isLeaderWorkspace
     ? `${session.church?.name || "Church"} / ${session.homecell?.name || "Homecell"}`
     : session.branch?.name
@@ -40,13 +42,30 @@ export function AppShell({ session, children }: AppShellProps) {
   }, [navGroups, pathname]);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1199) {
+      setIsSemiNav(false);
+    }
+  }, [pathname]);
+
+  useEffect(() => {
     const updateNavMode = () => {
-      if (isLeaderWorkspace) {
-        setIsSemiNav(false);
+      const isMobileViewport = window.innerWidth < 1199;
+      const previousViewport = wasMobileViewportRef.current;
+
+      if (previousViewport === null) {
+        wasMobileViewportRef.current = isMobileViewport;
+
+        if (!isMobileViewport) {
+          setIsSemiNav(false);
+        }
+
         return;
       }
 
-      setIsSemiNav(window.innerWidth < 1199);
+      if (previousViewport !== isMobileViewport) {
+        wasMobileViewportRef.current = isMobileViewport;
+        setIsSemiNav(false);
+      }
     };
 
     updateNavMode();
@@ -55,7 +74,7 @@ export function AppShell({ session, children }: AppShellProps) {
     return () => {
       window.removeEventListener("resize", updateNavMode);
     };
-  }, [isLeaderWorkspace]);
+  }, []);
 
   useEffect(() => {
     setIsProfileOpen(false);
@@ -87,9 +106,37 @@ export function AppShell({ session, children }: AppShellProps) {
     };
   }, []);
 
+  useEffect(() => {
+    function handleDocumentPointerDown(event: MouseEvent | TouchEvent) {
+      if (typeof window === "undefined" || window.innerWidth >= 1199 || !isSemiNav) {
+        return;
+      }
+
+      const target = event.target as Node | null;
+
+      if (!target) {
+        return;
+      }
+
+      if (navRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsSemiNav(false);
+    }
+
+    document.addEventListener("mousedown", handleDocumentPointerDown);
+    document.addEventListener("touchstart", handleDocumentPointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentPointerDown);
+      document.removeEventListener("touchstart", handleDocumentPointerDown);
+    };
+  }, [isSemiNav]);
+
   return (
     <div className="app-wrapper">
-      <nav className={`${isSemiNav ? "semi-nav" : ""} ${allowHoverSemiNav ? "" : "no-hover-semi-nav"}`.trim()} id="church-nav">
+      <nav className={`${isSemiNav ? "semi-nav" : ""} ${allowHoverSemiNav ? "" : "no-hover-semi-nav"}`.trim()} id="church-nav" ref={navRef}>
         <div className="app-logo">
           <Link className="logo d-inline-block" href="/dashboard" />
 
@@ -213,17 +260,6 @@ export function AppShell({ session, children }: AppShellProps) {
                 </div>
                 <div className="col-6 col-sm-6 d-flex align-items-center justify-content-end header-right p-0">
                   <ul className="d-flex align-items-center">
-                    <li className="header-notification">
-                      <Link className="d-block head-icon position-relative" href="/dashboard">
-                        <i className="ti ti-bell-ringing" />
-                        <span
-                          className="position-absolute translate-middle badge rounded-pill bg-danger"
-                          style={{ top: 8, right: -6 }}
-                        >
-                          8
-                        </span>
-                      </Link>
-                    </li>
                     <li className="header-profile dropdown position-relative" ref={profileMenuRef}>
                       <a
                         aria-expanded={isProfileOpen ? "true" : "false"}
