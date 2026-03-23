@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate } from "@/lib/format";
-import { getRangeDates, getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
+import { formatCurrency, getRangeDates, getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
 import {
   fetchAttendanceRecordsWithFilters,
   fetchAttendanceSummary,
@@ -26,6 +26,7 @@ export default function ServiceReportRoute() {
   const [period, setPeriod] = useState<"weekly" | "monthly">("weekly");
   const [date, setDate] = useState(getTodayDate());
   const [branchId, setBranchId] = useState(activeBranchId ? String(activeBranchId) : "");
+  const [serviceType, setServiceType] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,9 +74,10 @@ export default function ServiceReportRoute() {
           fetchAttendanceRecordsWithFilters({
             churchId,
             branchId: effectiveBranchId,
+            serviceType: serviceType || undefined,
             dateFrom: range.start,
             dateTo: range.end,
-            perPage: 50,
+            perPage: 200,
           }),
         ]);
 
@@ -102,11 +104,106 @@ export default function ServiceReportRoute() {
     return () => {
       active = false;
     };
-  }, [branchId, churchId, date, period]);
+  }, [branchId, churchId, date, period, serviceType]);
 
-  const highestLabel = useMemo(() => (
-    summary?.highest_service?.service_label || "No records yet"
-  ), [summary]);
+  const range = useMemo(() => getRangeDates(date, period), [date, period]);
+
+  const highestLabel = useMemo(
+    () => summary?.highest_service?.service_label || "No records yet",
+    [summary],
+  );
+
+  const totalFirstTimers = useMemo(
+    () => records.reduce((sum, record) => sum + Number(record.first_timers_count || 0), 0),
+    [records],
+  );
+
+  const totalNewConverts = useMemo(
+    () => records.reduce((sum, record) => sum + Number(record.new_converts_count || 0), 0),
+    [records],
+  );
+
+  const totalRededications = useMemo(
+    () => records.reduce((sum, record) => sum + Number(record.rededications_count || 0), 0),
+    [records],
+  );
+
+  const totalOfferings = useMemo(
+    () => records.reduce(
+      (sum, record) => sum + Number(record.main_offering || 0) + Number(record.tithe || 0) + Number(record.special_offering || 0),
+      0,
+    ),
+    [records],
+  );
+
+  const breakdownEntries = useMemo(
+    () => Object.entries(summary?.breakdown || {}),
+    [summary?.breakdown],
+  );
+
+  function exportRecordsAsExcel() {
+    if (records.length === 0) {
+      setErrorMessage("There are no service records to export for the current filters.");
+      return;
+    }
+
+    const tableHtml = `
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Branch</th>
+            <th>Service</th>
+            <th>Type</th>
+            <th>Male</th>
+            <th>Female</th>
+            <th>Children</th>
+            <th>Total</th>
+            <th>First Timers</th>
+            <th>New Converts</th>
+            <th>Rededications</th>
+            <th>Main Offering</th>
+            <th>Tithe</th>
+            <th>Special Offering</th>
+            <th>Recorded By</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${records.map((record) => `
+            <tr>
+              <td>${formatDate(record.service_date)}</td>
+              <td>${escapeHtml(record.branch?.name || `${session.church?.name || "Main Church"} (Main Church)`)}</td>
+              <td>${escapeHtml(record.service_label || "--")}</td>
+              <td>${escapeHtml(formatServiceType(record.service_type))}</td>
+              <td>${record.male_count ?? 0}</td>
+              <td>${record.female_count ?? 0}</td>
+              <td>${record.children_count ?? 0}</td>
+              <td>${record.total_count ?? 0}</td>
+              <td>${record.first_timers_count ?? 0}</td>
+              <td>${record.new_converts_count ?? 0}</td>
+              <td>${record.rededications_count ?? 0}</td>
+              <td>${escapeHtml(formatCurrency(record.main_offering))}</td>
+              <td>${escapeHtml(formatCurrency(record.tithe))}</td>
+              <td>${escapeHtml(formatCurrency(record.special_offering))}</td>
+              <td>${escapeHtml(resolveRecordedBy(record))}</td>
+              <td>${escapeHtml(record.notes || "--")}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+
+    const blob = new Blob([`\ufeff${tableHtml}`], { type: "application/vnd.ms-excel" });
+    const downloadUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `service-records-${period === "monthly" ? "month" : "week"}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(downloadUrl);
+  }
 
   if (isLoading) {
     return <TemplateLoader />;
@@ -121,12 +218,18 @@ export default function ServiceReportRoute() {
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
                   <h4 className="mb-1">Service Report</h4>
-                  <p className="text-secondary mb-0">See real service attendance totals, averages, highest service, and a simple service record table.</p>
+                  <p className="text-secondary mb-0">Review service attendance with the same full breakdown used in Recent Attendance Records, plus period filters and export.</p>
                 </div>
-                <Link className="btn btn-outline-primary" href="/attendance">
-                  <i className="ti ti-checkup-list me-1" />
-                  Record Attendance
-                </Link>
+                <div className="d-flex gap-2 flex-wrap">
+                  <button className="btn btn-outline-success" onClick={exportRecordsAsExcel} type="button">
+                    <i className="ti ti-file-spreadsheet me-1" />
+                    Export Excel
+                  </button>
+                  <Link className="btn btn-outline-primary" href="/attendance">
+                    <i className="ti ti-checkup-list me-1" />
+                    Record Attendance
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -140,7 +243,7 @@ export default function ServiceReportRoute() {
           {period === "monthly" ? "Current month" : "Current week"}
         </StatCard>
         <StatCard borderClass="b-s-3-success" badgeClass="text-light-success" label="Total Attendance" value={summary?.total_attendance ?? 0} valueClass="text-success">
-          Visible records
+          {`${formatDate(range.start)} - ${formatDate(range.end)}`}
         </StatCard>
         <StatCard borderClass="b-s-3-warning" badgeClass="text-light-warning" label="Average Per Service" value={summary?.average_attendance ?? 0} valueClass="text-warning">
           Selected period
@@ -148,6 +251,35 @@ export default function ServiceReportRoute() {
         <StatCard borderClass="b-s-3-info" badgeClass="text-light-info" label="Highest Service" value={summary?.highest_service?.total_count ?? 0} valueClass="text-info">
           {highestLabel}
         </StatCard>
+
+        <StatCard borderClass="b-s-3-success" badgeClass="text-light-success" label="First Timers" value={totalFirstTimers} valueClass="text-success">
+          Visible records
+        </StatCard>
+        <StatCard borderClass="b-s-3-primary" badgeClass="text-light-primary" label="New Converts" value={totalNewConverts} valueClass="text-primary">
+          Visible records
+        </StatCard>
+        <StatCard borderClass="b-s-3-warning" badgeClass="text-light-warning" label="Rededications" value={totalRededications} valueClass="text-warning">
+          Visible records
+        </StatCard>
+        <StatCard borderClass="b-s-3-info" badgeClass="text-light-info" label="Offerings" value={formatCurrency(totalOfferings)} valueClass="text-info">
+          Main, tithe, special
+        </StatCard>
+
+        <div className="col-12">
+          <div className="alert alert-info">
+            <i className="ti ti-info-circle me-2" />
+            <strong>Coverage:</strong> Summary cards use the selected period and branch filters. The records table also applies the optional service type filter.
+            {breakdownEntries.length ? (
+              <span className="d-block mt-2">
+                {breakdownEntries.map(([type, item]) => (
+                  <span key={type} className="badge bg-light-secondary text-secondary me-2 mb-1">
+                    {formatServiceType(type)}: {item.count || 0} services / {item.total || 0} attendance
+                  </span>
+                ))}
+              </span>
+            ) : null}
+          </div>
+        </div>
 
         <div className="col-12">
           <div className="card">
@@ -173,6 +305,18 @@ export default function ServiceReportRoute() {
                     </option>
                   ))}
                 </select>
+                <select
+                  className="form-select form-select-sm"
+                  onChange={(event) => setServiceType(event.target.value)}
+                  style={{ width: 180 }}
+                  value={serviceType}
+                >
+                  <option value="">All Services</option>
+                  <option value="sunday">Sunday</option>
+                  <option value="wednesday">Wednesday</option>
+                  <option value="wose">WOSE</option>
+                  <option value="special">Special</option>
+                </select>
               </div>
             </div>
             <div className="card-body">
@@ -183,17 +327,23 @@ export default function ServiceReportRoute() {
                       <th>Date</th>
                       <th>Branch</th>
                       <th>Service</th>
-                      <th>Attendance</th>
+                      <th>Type</th>
+                      <th>Male</th>
+                      <th>Female</th>
+                      <th>Children</th>
+                      <th>Total</th>
                       <th>First Timers</th>
                       <th>New Converts</th>
                       <th>Re-Dedications</th>
+                      <th>Finance</th>
+                      <th>Notes</th>
                       <th>Recorded By</th>
                     </tr>
                   </thead>
                   <tbody>
                     {records.length === 0 ? (
                       <tr>
-                        <td className="text-center text-muted py-4" colSpan={8}>No service records found for the selected filters.</td>
+                        <td className="text-center text-muted py-4" colSpan={14}>No service records found for the selected filters.</td>
                       </tr>
                     ) : records.map((record) => {
                       const branchLabel = record.branch?.name || `${session.church?.name || "Main Church"} (Main Church)`;
@@ -201,12 +351,28 @@ export default function ServiceReportRoute() {
                       return (
                         <tr key={record.id}>
                           <td>{formatDate(record.service_date)}</td>
-                          <td>{branchLabel}</td>
-                          <td>{record.service_label || "--"}</td>
+                          <td>
+                            {record.branch ? (
+                              <span className="badge bg-light-secondary text-secondary">{branchLabel}</span>
+                            ) : (
+                              <span className="text-muted">{branchLabel}</span>
+                            )}
+                          </td>
+                          <td><span className="badge bg-primary">{record.service_label || "--"}</span></td>
+                          <td>{formatServiceType(record.service_type)}</td>
+                          <td>{record.male_count ?? 0}</td>
+                          <td>{record.female_count ?? 0}</td>
+                          <td>{record.children_count ?? 0}</td>
                           <td className="fw-semibold">{record.total_count ?? 0}</td>
-                          <td>{record.first_timers_count ?? 0}</td>
-                          <td>{record.new_converts_count ?? 0}</td>
+                          <td><span className="text-success">{record.first_timers_count ?? 0}</span></td>
+                          <td><span className="text-primary">{record.new_converts_count ?? 0}</span></td>
                           <td>{record.rededications_count ?? 0}</td>
+                          <td className="small">
+                            Main: {formatCurrency(record.main_offering)}<br />
+                            Tithe: {formatCurrency(record.tithe)}<br />
+                            Special: {formatCurrency(record.special_offering)}
+                          </td>
+                          <td className="small text-secondary">{record.notes || "--"}</td>
                           <td>{resolveRecordedBy(record)}</td>
                         </tr>
                       );
@@ -227,6 +393,24 @@ function resolveRecordedBy(record: AttendanceRecord) {
   return name && !looksLikeRoleLabel(name) ? name : "System";
 }
 
+function formatServiceType(serviceType?: string | null) {
+  return ({
+    sunday: "Sunday",
+    wednesday: "Wednesday",
+    wose: "WOSE",
+    special: "Special",
+  } as Record<string, string>)[String(serviceType || "").toLowerCase()] || "--";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function StatCard({
   borderClass,
   badgeClass,
@@ -238,7 +422,7 @@ function StatCard({
   borderClass: string;
   badgeClass: string;
   label: string;
-  value: number;
+  value: number | string;
   valueClass: string;
   children: string;
 }) {

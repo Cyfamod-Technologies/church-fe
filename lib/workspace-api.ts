@@ -1,6 +1,7 @@
 import { apiRequest } from "@/lib/api";
 import type { SessionData } from "@/types/session";
 import type {
+  AttendanceRecord,
   AttendanceListResponse,
   AttendanceSummaryResponse,
   BranchRecord,
@@ -226,6 +227,17 @@ export async function fetchAttendanceRecordsWithFilters({
 export async function createAttendanceRecord(payload: Record<string, unknown>) {
   return apiRequest<{ message: string; data: unknown }>("attendance", {
     method: "POST",
+    body: payload,
+  });
+}
+
+export async function fetchAttendanceRecord(recordId: number) {
+  return apiRequest<{ data: AttendanceRecord }>(`attendance/${recordId}`);
+}
+
+export async function updateAttendanceRecord(recordId: number, payload: Record<string, unknown>) {
+  return apiRequest<{ message: string; data: AttendanceRecord }>(`attendance/${recordId}`, {
+    method: "PUT",
     body: payload,
   });
 }

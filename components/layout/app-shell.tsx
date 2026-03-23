@@ -214,14 +214,14 @@ export function AppShell({ session, children }: AppShellProps) {
           </ul>
         </div>
 
-        <div className="menu-navs">
+        {/* <div className="menu-navs">
           <span className="menu-previous">
             <i className="ti ti-chevron-left" />
           </span>
           <span className="menu-next">
             <i className="ti ti-chevron-right" />
           </span>
-        </div>
+        </div> */}
       </nav>
 
       <div className="app-content">

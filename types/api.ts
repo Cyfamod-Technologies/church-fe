@@ -259,9 +259,15 @@ export interface HomecellListResponse {
 
 export interface AttendanceRecord {
   id: number;
+  church_id?: number | null;
+  branch_id?: number | null;
+  service_schedule_id?: number | null;
+  recorded_by_user_id?: number | null;
   service_date?: string | null;
   service_label?: string | null;
   service_type?: string | null;
+  sunday_service_number?: number | null;
+  special_service_name?: string | null;
   male_count?: number;
   female_count?: number;
   children_count?: number;
