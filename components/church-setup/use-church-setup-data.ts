@@ -2,13 +2,16 @@
 
 import { useEffect, useState } from "react";
 import {
+  fetchBranch,
   fetchBranches,
   fetchChurch,
   fetchServiceSchedules,
+  getBranchId,
   getChurchId,
 } from "@/lib/workspace-api";
 import type {
   BranchListResponse,
+  BranchRecord,
   BranchStats,
   ChurchApiRecord,
   ServiceScheduleRecord,
@@ -17,6 +20,7 @@ import type { SessionData } from "@/types/session";
 
 interface ChurchSetupDataState {
   church: ChurchApiRecord | null;
+  branch: BranchRecord | null;
   branches: BranchListResponse["data"];
   branchStats: BranchStats | undefined;
   serviceSchedules: ServiceScheduleRecord[];
@@ -26,6 +30,7 @@ interface ChurchSetupDataState {
 
 const initialState: ChurchSetupDataState = {
   church: null,
+  branch: null,
   branches: [],
   branchStats: undefined,
   serviceSchedules: [],
@@ -35,6 +40,7 @@ const initialState: ChurchSetupDataState = {
 
 export function useChurchSetupData(session: SessionData) {
   const churchId = getChurchId(session);
+  const branchId = getBranchId(session);
   const [state, setState] = useState<ChurchSetupDataState>(initialState);
 
   useEffect(() => {
@@ -49,10 +55,12 @@ export function useChurchSetupData(session: SessionData) {
 
       try {
         const [churchResponse, schedulesResponse, branchesResponse] = await Promise.all([
-          fetchChurch(churchId),
-          fetchServiceSchedules(churchId),
-          fetchBranches(churchId),
+          fetchChurch(churchId, branchId),
+          fetchServiceSchedules(churchId, branchId),
+          fetchBranches(churchId, branchId),
         ]);
+
+        const branchResponse = branchId ? await fetchBranch(branchId) : { data: null };
 
         if (!active) {
           return;
@@ -60,6 +68,7 @@ export function useChurchSetupData(session: SessionData) {
 
         setState({
           church: churchResponse.data,
+          branch: branchResponse.data || null,
           serviceSchedules: schedulesResponse.data || [],
           branches: branchesResponse.data || [],
           branchStats: branchesResponse.meta?.stats,
@@ -84,7 +93,7 @@ export function useChurchSetupData(session: SessionData) {
     return () => {
       active = false;
     };
-  }, [churchId]);
+  }, [branchId, churchId]);
 
   return state;
 }

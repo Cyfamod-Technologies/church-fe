@@ -67,7 +67,7 @@ export default function HomecellReportsRoute() {
 
       try {
         const [branchesResponse, homecellsResponse] = await Promise.all([
-          branchId ? Promise.resolve({ data: session.branch ? [session.branch as BranchRecord] : [] }) : fetchBranches(churchId),
+          fetchBranches(churchId, branchId),
           fetchHomecells(churchId, branchId),
         ]);
 
@@ -93,7 +93,7 @@ export default function HomecellReportsRoute() {
     return () => {
       active = false;
     };
-  }, [branchId, churchId, session.branch]);
+  }, [branchId, churchId]);
 
   useEffect(() => {
     let active = true;

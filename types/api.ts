@@ -32,6 +32,7 @@ export interface ChurchApiRecord {
 
 export interface ServiceScheduleRecord {
   id: number;
+  branch_id?: number | null;
   label?: string | null;
   service_type?: string | null;
   day_name?: string | null;
@@ -46,6 +47,8 @@ export interface BranchRecord {
   name: string;
   code?: string | null;
   status?: string | null;
+  finance_enabled?: boolean;
+  special_services_enabled?: boolean;
   address?: string | null;
   city?: string | null;
   state?: string | null;

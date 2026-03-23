@@ -10,6 +10,7 @@ import { saveSession } from "@/lib/session";
 import {
   fetchLgasByStateSlug,
   fetchStates,
+  updateBranch,
   updateChurchProfile,
 } from "@/lib/workspace-api";
 import type {
@@ -62,11 +63,14 @@ const emptyForm: ProfileFormState = {
 export default function ChurchProfileEditRoute() {
   const session = useSessionContext();
   const router = useRouter();
-  const { church, isLoading, error } = useChurchSetupData(session);
+  const { church, branch, isLoading, error } = useChurchSetupData(session);
   const primaryAdmin = useMemo(
-    () => church?.users?.find((user) => user.role === "church_admin") || church?.users?.[0] || null,
-    [church],
+    () => branch?.local_admin || church?.users?.find((user) => user.role === "church_admin") || church?.users?.[0] || null,
+    [branch, church],
   );
+  const workspace = branch || church;
+  const workspaceTitle = branch ? "Edit Branch Profile" : "Edit Church Profile";
+  const workspaceLabel = branch ? "branch" : "church";
 
   const [form, setForm] = useState<ProfileFormState>(emptyForm);
   const [states, setStates] = useState<LocationStateRecord[]>([]);
@@ -100,45 +104,45 @@ export default function ChurchProfileEditRoute() {
   }, []);
 
   useEffect(() => {
-    if (!church) {
+    if (!workspace) {
       return;
     }
 
     setForm({
-      churchName: church.name || "",
-      churchCode: church.code || "",
-      churchCity: church.city || "",
-      churchAddress: church.address || "",
-      churchEmail: church.email || "",
-      churchPhone: church.phone || "",
-      churchStatus: church.status || "active",
-      churchLga: church.district_area || "",
-      pastorName: church.pastor_name || "",
-      pastorPhone: church.pastor_phone || "",
-      pastorEmail: church.pastor_email || "",
+      churchName: workspace.name || "",
+      churchCode: workspace.code || "",
+      churchCity: workspace.city || "",
+      churchAddress: workspace.address || "",
+      churchEmail: workspace.email || "",
+      churchPhone: workspace.phone || "",
+      churchStatus: workspace.status || "active",
+      churchLga: workspace.district_area || "",
+      pastorName: workspace.pastor_name || "",
+      pastorPhone: workspace.pastor_phone || "",
+      pastorEmail: workspace.pastor_email || "",
       adminId: primaryAdmin?.id ? String(primaryAdmin.id) : "",
       adminName: primaryAdmin?.name || "",
       adminEmail: primaryAdmin?.email || "",
       adminPhone: primaryAdmin?.phone || "",
       adminPassword: "",
       adminPasswordConfirmation: "",
-      financeEnabled: Boolean(church.finance_enabled),
+      financeEnabled: Boolean(workspace.finance_enabled),
     });
-  }, [church, primaryAdmin]);
+  }, [primaryAdmin, workspace]);
 
   useEffect(() => {
-    if (!church?.state || states.length === 0) {
+    if (!workspace?.state || states.length === 0) {
       return;
     }
 
     const matchingState = states.find(
-      (state) => state.name.trim().toLowerCase() === church.state?.trim().toLowerCase(),
+      (state) => state.name.trim().toLowerCase() === workspace.state?.trim().toLowerCase(),
     );
 
     if (matchingState?.slug) {
       setSelectedStateSlug(matchingState.slug);
     }
-  }, [church?.state, states]);
+  }, [states, workspace?.state]);
 
   useEffect(() => {
     let active = true;
@@ -190,8 +194,8 @@ export default function ChurchProfileEditRoute() {
     try {
       const selectedState = states.find((state) => state.slug === selectedStateSlug) || null;
 
-      await updateChurchProfile(Number(session.church?.id), {
-        church: {
+      if (branch) {
+        await updateBranch(branch.id, {
           name: form.churchName.trim(),
           code: form.churchCode.trim() || null,
           address: form.churchAddress.trim() || null,
@@ -201,51 +205,96 @@ export default function ChurchProfileEditRoute() {
           email: form.churchEmail.trim() || null,
           phone: form.churchPhone.trim() || null,
           status: form.churchStatus || "active",
-        },
-        pastor: {
-          name: form.pastorName.trim(),
-          phone: form.pastorPhone.trim(),
-          email: form.pastorEmail.trim() || null,
-        },
-        settings: {
+          pastor_name: form.pastorName.trim() || null,
+          pastor_phone: form.pastorPhone.trim() || null,
+          pastor_email: form.pastorEmail.trim() || null,
           finance_enabled: form.financeEnabled,
-        },
-        admin: {
-          id: form.adminId ? Number(form.adminId) : null,
-          name: form.adminName.trim(),
-          email: form.adminEmail.trim(),
-          phone: form.adminPhone.trim(),
-          password: form.adminPassword || null,
-          password_confirmation: form.adminPasswordConfirmation || null,
-        },
-      });
+          special_services_enabled: Boolean(branch.special_services_enabled),
+          branch_tag_id: branch.tag?.id || null,
+          admin: {
+            name: form.adminName.trim() || null,
+            email: form.adminEmail.trim() || null,
+            phone: form.adminPhone.trim() || null,
+            password: form.adminPassword || null,
+            password_confirmation: form.adminPasswordConfirmation || null,
+          },
+        });
 
-      saveSession({
-        church: {
-          ...session.church,
-          id: Number(session.church?.id),
-          name: form.churchName.trim(),
-          code: form.churchCode.trim() || null,
-        },
-        user: session.user?.id === Number(form.adminId)
-          ? {
-              ...session.user,
-              name: form.adminName.trim(),
-              email: form.adminEmail.trim(),
-              phone: form.adminPhone.trim(),
-            }
-          : session.user,
-      });
+        saveSession({
+          branch: {
+            ...session.branch,
+            id: branch.id,
+            name: form.churchName.trim(),
+            code: form.churchCode.trim() || null,
+            status: form.churchStatus || "active",
+          },
+          user: session.user?.id === Number(form.adminId)
+            ? {
+                ...session.user,
+                name: form.adminName.trim(),
+                email: form.adminEmail.trim(),
+                phone: form.adminPhone.trim(),
+              }
+            : session.user,
+        });
+      } else {
+        await updateChurchProfile(Number(session.church?.id), {
+          church: {
+            name: form.churchName.trim(),
+            code: form.churchCode.trim() || null,
+            address: form.churchAddress.trim() || null,
+            city: form.churchCity.trim() || null,
+            state: selectedState?.name || null,
+            district_area: form.churchLga || null,
+            email: form.churchEmail.trim() || null,
+            phone: form.churchPhone.trim() || null,
+            status: form.churchStatus || "active",
+          },
+          pastor: {
+            name: form.pastorName.trim(),
+            phone: form.pastorPhone.trim(),
+            email: form.pastorEmail.trim() || null,
+          },
+          settings: {
+            finance_enabled: form.financeEnabled,
+          },
+          admin: {
+            id: form.adminId ? Number(form.adminId) : null,
+            name: form.adminName.trim(),
+            email: form.adminEmail.trim(),
+            phone: form.adminPhone.trim(),
+            password: form.adminPassword || null,
+            password_confirmation: form.adminPasswordConfirmation || null,
+          },
+        });
+
+        saveSession({
+          church: {
+            ...session.church,
+            id: Number(session.church?.id),
+            name: form.churchName.trim(),
+            code: form.churchCode.trim() || null,
+          },
+          user: session.user?.id === Number(form.adminId)
+            ? {
+                ...session.user,
+                name: form.adminName.trim(),
+                email: form.adminEmail.trim(),
+                phone: form.adminPhone.trim(),
+              }
+            : session.user,
+        });
+      }
 
       router.replace("/church-profile?updated=1");
     } catch (submitError) {
-      setPageError(submitError instanceof Error ? submitError.message : "Unable to save church profile.");
+      setPageError(submitError instanceof Error ? submitError.message : `Unable to save ${workspaceLabel} profile.`);
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (isLoading && !church) {
+  if (isLoading && !workspace) {
     return <TemplateLoader />;
   }
 
@@ -257,7 +306,7 @@ export default function ChurchProfileEditRoute() {
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                  <h4 className="mb-1">Edit Church Profile</h4>
+                  <h4 className="mb-1">{workspaceTitle}</h4>
                   <p className="text-secondary mb-0">
                     Update church information, pastor record, admin contact and finance setting.
                   </p>

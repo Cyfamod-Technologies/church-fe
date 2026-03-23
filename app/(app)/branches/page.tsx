@@ -24,6 +24,7 @@ import {
   fetchBranchTags,
   fetchLgasByStateSlug,
   fetchStates,
+  getBranchId,
   getChurchId,
   reassignBranch,
   updateBranch,
@@ -84,6 +85,7 @@ const emptyBranchForm: BranchFormState = {
 export default function BranchesRoute() {
   const session = useSessionContext();
   const churchId = getChurchId(session);
+  const branchId = getBranchId(session);
 
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [branchTags, setBranchTags] = useState<BranchTagRecord[]>([]);
@@ -155,7 +157,7 @@ export default function BranchesRoute() {
 
       try {
         const [branchesResponse, tagsResponse, statesResponse] = await Promise.all([
-          fetchBranches(churchId),
+          fetchBranches(churchId, branchId),
           fetchBranchTags(churchId),
           fetchStates(),
         ]);
@@ -185,10 +187,10 @@ export default function BranchesRoute() {
     return () => {
       active = false;
     };
-  }, [churchId]);
+  }, [branchId, churchId]);
 
   async function refreshBranches() {
-    const response = await fetchBranches(churchId);
+    const response = await fetchBranches(churchId, branchId);
     setBranches(response.data || []);
   }
 
@@ -420,7 +422,7 @@ export default function BranchesRoute() {
     setReassignNote("");
 
     try {
-      const response = await fetchBranchParents(branch.id);
+      const response = await fetchBranchParents(branch.id, branchId);
       setParentOptions(response.data);
       setIsReassignModalOpen(true);
     } catch (parentError) {
@@ -648,14 +650,19 @@ export default function BranchesRoute() {
                             </span>
                           </td>
                           <td>
-                            <div className="dropdown position-relative">
-                              <button
-                                className="btn btn-sm btn-light-secondary dropdown-toggle"
-                                onClick={() => setActionMenuId((current) => current === entry.branch.id ? null : entry.branch.id)}
-                                type="button"
-                              >
-                                Actions
+                            <div className="d-flex gap-2 justify-content-end">
+                              <button className="btn btn-sm btn-light-primary" onClick={() => void openEditBranchModal(entry.branch)} type="button">
+                                <i className="ti ti-edit me-1" />
+                                Edit
                               </button>
+                              <div className="dropdown position-relative">
+                                <button
+                                  className="btn btn-sm btn-light-secondary dropdown-toggle"
+                                  onClick={() => setActionMenuId((current) => current === entry.branch.id ? null : entry.branch.id)}
+                                  type="button"
+                                >
+                                  More
+                                </button>
                               <ul
                                 className={`dropdown-menu ${actionMenuId === entry.branch.id ? "show" : ""}`}
                                 style={{ right: 0, left: "auto" }}
@@ -664,12 +671,6 @@ export default function BranchesRoute() {
                                   <button className="dropdown-item" onClick={() => void openDetails(entry.branch.id)} type="button">
                                     <i className="ti ti-eye me-2" />
                                     View Details
-                                  </button>
-                                </li>
-                                <li>
-                                  <button className="dropdown-item" onClick={() => void openEditBranchModal(entry.branch)} type="button">
-                                    <i className="ti ti-edit me-2" />
-                                    Edit
                                   </button>
                                 </li>
                                 <li>
@@ -686,6 +687,7 @@ export default function BranchesRoute() {
                                   </button>
                                 </li>
                               </ul>
+                              </div>
                             </div>
                           </td>
                         </tr>
@@ -841,7 +843,7 @@ export default function BranchesRoute() {
                 <div className="border rounded p-3">
                   <h6 className="mb-1">Local Branch Admin</h6>
                   <p className="text-secondary small mb-3">
-                    This admin can log in and manage the branch as its own local church workspace.
+                    This admin can log in and manage the branch as its own local church workspace. New local branch admins default to <strong>12345678</strong> if you leave the password blank.
                   </p>
                   <div className="row">
                     <BranchInput className="col-md-6" label="Admin Name" value={branchForm.admin_name} onChange={(value) => updateBranchForm(setBranchForm, "admin_name", value)} />
@@ -849,7 +851,7 @@ export default function BranchesRoute() {
                     <BranchInput className="col-md-6" label="Admin Phone" value={branchForm.admin_phone} onChange={(value) => updateBranchForm(setBranchForm, "admin_phone", value)} />
                     <BranchInput
                       className="col-md-6"
-                      helpText={branchForm.id ? "Leave blank to keep the existing password." : "Required when creating a branch admin."}
+                      helpText={branchForm.id ? "Leave blank to keep the existing password, or to use 12345678 when creating a missing local admin." : "Leave blank to use the default password 12345678."}
                       label="Admin Password"
                       type="password"
                       value={branchForm.admin_password}

@@ -98,8 +98,8 @@ export function DashboardPage({ session }: DashboardPageProps) {
         ] = await Promise.all([
           fetchChurch(churchId),
           homecellId ? fetchHomecell(homecellId) : Promise.resolve({ data: null }),
-          fetchServiceSchedules(churchId),
-          fetchBranches(churchId),
+          fetchServiceSchedules(churchId, branchId),
+          fetchBranches(churchId, branchId),
           fetchHomecells(churchId, branchId),
           fetchAttendanceSummary(churchId, branchId),
           fetchAttendanceRecords(churchId, branchId, 5),

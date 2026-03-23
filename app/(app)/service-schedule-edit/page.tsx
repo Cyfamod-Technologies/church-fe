@@ -29,7 +29,8 @@ const defaultCustomService = (): CustomServiceForm => ({
 export default function ServiceScheduleEditRoute() {
   const session = useSessionContext();
   const router = useRouter();
-  const { serviceSchedules, church, isLoading, error } = useChurchSetupData(session);
+  const { serviceSchedules, church, branch, isLoading, error } = useChurchSetupData(session);
+  const workspaceLabel = branch ? "Branch" : "Church";
 
   const sundayServices = useMemo(
     () => serviceSchedules.filter((item) => item.service_type === "sunday"),
@@ -96,8 +97,8 @@ export default function ServiceScheduleEditRoute() {
         recurrence_detail: service.recurrence_detail || "",
       })),
     );
-    setSpecialServicesEnabled(Boolean(church?.special_services_enabled));
-  }, [church, customServices, serviceSchedules.length, sundayServices, wednesdayService, woseServices]);
+    setSpecialServicesEnabled(Boolean(branch?.special_services_enabled ?? church?.special_services_enabled));
+  }, [branch?.special_services_enabled, church?.special_services_enabled, customServices, serviceSchedules.length, sundayServices, wednesdayService, woseServices]);
 
   function handleSundayCountChange(event: ChangeEvent<HTMLSelectElement>) {
     const nextCount = Number(event.target.value);
@@ -180,7 +181,7 @@ export default function ServiceScheduleEditRoute() {
           })),
           special_services_enabled: specialServicesEnabled,
         },
-      });
+      }, branch?.id);
 
       saveSession({
         church: {
@@ -211,9 +212,9 @@ export default function ServiceScheduleEditRoute() {
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                  <h4 className="mb-1">Edit Service Schedule</h4>
+                  <h4 className="mb-1">Edit {workspaceLabel} Service Schedule</h4>
                   <p className="text-secondary mb-0">
-                    Update regular worship services and WOSE configuration without editing the rest of the church profile.
+                    Update regular worship services and WOSE configuration without editing the rest of the {branch ? "branch" : "church"} profile.
                   </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
@@ -223,7 +224,7 @@ export default function ServiceScheduleEditRoute() {
                   </Link>
                   <Link className="btn btn-outline-primary" href="/church-profile">
                     <i className="ti ti-building-church me-1" />
-                    Church Profile
+                    {workspaceLabel} Profile
                   </Link>
                 </div>
               </div>

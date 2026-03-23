@@ -34,9 +34,7 @@ export default function MemberReportRoute() {
 
     async function loadBranches() {
       try {
-        const response = activeBranchId
-          ? { data: session.branch ? [session.branch as BranchRecord] : [] }
-          : await fetchBranches(churchId);
+        const response = await fetchBranches(churchId, activeBranchId);
 
         if (!active) {
           return;
@@ -55,7 +53,7 @@ export default function MemberReportRoute() {
     return () => {
       active = false;
     };
-  }, [activeBranchId, churchId, session.branch]);
+  }, [activeBranchId, churchId]);
 
   useEffect(() => {
     let active = true;

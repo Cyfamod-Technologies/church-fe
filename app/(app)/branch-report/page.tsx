@@ -7,6 +7,7 @@ import { useSessionContext } from "@/components/providers/auth-guard";
 import {
   fetchBranches,
   fetchBranchTags,
+  getBranchId,
   getChurchId,
 } from "@/lib/workspace-api";
 import type { BranchRecord, BranchStats, BranchTagRecord } from "@/types/api";
@@ -14,6 +15,7 @@ import type { BranchRecord, BranchStats, BranchTagRecord } from "@/types/api";
 export default function BranchReportRoute() {
   const session = useSessionContext();
   const churchId = getChurchId(session);
+  const branchId = getBranchId(session);
 
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [branchTags, setBranchTags] = useState<BranchTagRecord[]>([]);
@@ -32,7 +34,7 @@ export default function BranchReportRoute() {
       try {
         const [tagsResponse, branchesResponse] = await Promise.all([
           fetchBranchTags(churchId),
-          fetchBranches(churchId),
+          fetchBranches(churchId, branchId),
         ]);
 
         if (!active) {
@@ -57,7 +59,7 @@ export default function BranchReportRoute() {
     return () => {
       active = false;
     };
-  }, [churchId]);
+  }, [branchId, churchId]);
 
   const visibleBranches = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();

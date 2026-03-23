@@ -102,7 +102,7 @@ export default function AddMemberRoute() {
       try {
         const [churchResponse, branchesResponse, unitsResponse] = await Promise.all([
           fetchChurch(churchId),
-          activeBranchId ? Promise.resolve({ data: [session.branch] as BranchRecord[] }) : fetchBranches(churchId),
+          fetchBranches(churchId, activeBranchId),
           fetchChurchUnits(churchId),
         ]);
 
@@ -160,7 +160,7 @@ export default function AddMemberRoute() {
     return () => {
       active = false;
     };
-  }, [activeBranchId, churchId, editEntryId, session.branch, session.user]);
+  }, [activeBranchId, churchId, editEntryId, session.user]);
 
   const recorderLabel = useMemo(() => (
     currentRecorder?.name ? `Recorder: ${currentRecorder.name}` : "Recorder: Active session"

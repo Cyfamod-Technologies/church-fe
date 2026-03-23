@@ -9,7 +9,9 @@ import { useChurchSetupData } from "@/components/church-setup/use-church-setup-d
 export default function ServiceScheduleRoute() {
   const session = useSessionContext();
   const searchParams = useSearchParams();
-  const { serviceSchedules, church, error } = useChurchSetupData(session);
+  const { serviceSchedules, church, branch, error } = useChurchSetupData(session);
+  const workspaceLabel = branch ? "Branch" : "Church";
+  const specialServicesEnabled = branch?.special_services_enabled ?? church?.special_services_enabled;
   const sundayServices = serviceSchedules.filter((item) => item.service_type === "sunday");
   const wednesdayService = serviceSchedules.find((item) => item.service_type === "wednesday") || null;
   const woseServices = serviceSchedules.filter((item) => item.service_type === "wose");
@@ -24,9 +26,9 @@ export default function ServiceScheduleRoute() {
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                  <h4 className="mb-1">Service Schedule</h4>
+                  <h4 className="mb-1">{workspaceLabel} Service Schedule</h4>
                   <p className="text-secondary mb-0">
-                    Review all configured service times and recurrence patterns before editing.
+                    Review all configured service times and recurrence patterns for this {branch ? "branch" : "church"} workspace before editing.
                   </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
@@ -42,7 +44,7 @@ export default function ServiceScheduleRoute() {
         </div>
 
         <div className="col-12">
-          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>Service schedule updated successfully.</div>
+          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>{workspaceLabel} service schedule updated successfully.</div>
           <div className={`alert alert-danger ${error ? "" : "d-none"}`}>{error}</div>
         </div>
 
@@ -165,8 +167,8 @@ export default function ServiceScheduleRoute() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center border rounded p-3 mb-3">
                 <span>Special Services Enabled</span>
-                <span className={`badge ${church?.special_services_enabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
-                  {church?.special_services_enabled ? "Enabled" : "Disabled"}
+                <span className={`badge ${specialServicesEnabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
+                  {specialServicesEnabled ? "Enabled" : "Disabled"}
                 </span>
               </div>
               <div className="small text-secondary">

@@ -53,7 +53,7 @@ export default function ReportsRoute() {
     async function loadData() {
       try {
         const [branchesResponse, attendanceResponse, homecellResponse, membersResponse] = await Promise.all([
-          fetchBranches(churchId),
+          fetchBranches(churchId, branchId),
           fetchAttendanceSummary(churchId, branchId),
           fetchHomecellAttendanceSummary(churchId, branchId),
           fetchMemberEntries(churchId, branchId, 100),

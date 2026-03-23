@@ -73,7 +73,7 @@ export default function HomecellLeadersRoute() {
 
       try {
         const [branchesResponse, homecellsResponse] = await Promise.all([
-          branchId ? Promise.resolve({ data: session.branch ? [session.branch as BranchRecord] : [] }) : fetchBranches(churchId),
+          fetchBranches(churchId, branchId),
           fetchHomecells(churchId, branchId),
         ]);
 
@@ -99,7 +99,7 @@ export default function HomecellLeadersRoute() {
     return () => {
       active = false;
     };
-  }, [branchId, churchId, session.branch]);
+  }, [branchId, churchId]);
 
   const filteredHomecells = useMemo(() => {
     const selectedBranchId = Number(branchFilter || 0) || null;

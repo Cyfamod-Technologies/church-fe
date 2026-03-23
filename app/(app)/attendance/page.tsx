@@ -10,12 +10,14 @@ import { formatDate, formatTime } from "@/lib/format";
 import {
   createAttendanceRecord,
   deleteAttendanceRecord,
+  fetchBranch,
   fetchAttendanceRecord,
   fetchAttendanceRecords,
   fetchAttendanceRecordsWithFilters,
   fetchAttendanceSummary,
   fetchBranches,
   fetchChurch,
+  fetchServiceSchedules,
   getBranchId,
   getChurchId,
   updateAttendanceRecord,
@@ -84,6 +86,7 @@ export default function AttendanceRoute() {
 
   const [form, setForm] = useState<AttendanceFormState>(emptyAttendanceForm(sessionBranchId ? String(sessionBranchId) : ""));
   const [branches, setBranches] = useState<BranchRecord[]>([]);
+  const [branchProfile, setBranchProfile] = useState<BranchRecord | null>(null);
   const [services, setServices] = useState<ServiceScheduleRecord[]>([]);
   const [church, setChurch] = useState<ChurchApiRecord | null>(null);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -113,7 +116,7 @@ export default function AttendanceRoute() {
   }, [form.serviceDate]);
 
   const serviceOptions = useMemo(() => buildServiceOptions(services), [services]);
-  const financeEnabled = Boolean(church?.finance_enabled);
+  const financeEnabled = Boolean(branchProfile?.finance_enabled ?? church?.finance_enabled);
 
   useEffect(() => {
     setForm(emptyAttendanceForm(sessionBranchId ? String(sessionBranchId) : ""));
@@ -127,20 +130,23 @@ export default function AttendanceRoute() {
       setErrorMessage("");
 
       try {
-        const [branchesResponse, churchResponse] = await Promise.all([
-          fetchBranches(churchId),
-          fetchChurch(churchId),
+        const [branchesResponse, churchResponse, servicesResponse, branchResponse] = await Promise.all([
+          fetchBranches(churchId, sessionBranchId),
+          fetchChurch(churchId, sessionBranchId),
+          fetchServiceSchedules(churchId, sessionBranchId),
+          sessionBranchId ? fetchBranch(sessionBranchId) : Promise.resolve({ data: null }),
         ]);
 
         if (!active) {
           return;
         }
 
-        const nextServices = ((churchResponse.data.service_schedules || []) as ServiceScheduleRecord[])
+        const nextServices = ((servicesResponse.data || []) as ServiceScheduleRecord[])
           .slice()
           .sort((left, right) => Number(left.sort_order || 0) - Number(right.sort_order || 0));
 
         setBranches(branchesResponse.data || []);
+        setBranchProfile(branchResponse.data || null);
         setChurch(churchResponse.data || null);
         setServices(nextServices);
 

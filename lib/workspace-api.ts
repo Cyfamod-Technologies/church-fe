@@ -31,8 +31,16 @@ export function getBranchId(session: SessionData): number | undefined {
   return session.branch?.id ? Number(session.branch.id) : undefined;
 }
 
-export async function fetchChurch(churchId: number) {
-  return apiRequest<{ data: ChurchApiRecord }>(`churches/${churchId}`);
+export async function fetchChurch(churchId: number, branchId?: number) {
+  const params = new URLSearchParams();
+
+  if (branchId) {
+    params.set("branch_id", String(branchId));
+  }
+
+  return apiRequest<{ data: ChurchApiRecord }>(
+    `churches/${churchId}${params.toString() ? `?${params.toString()}` : ""}`,
+  );
 }
 
 export async function updateHomecellSchedule(churchId: number, payload: {
@@ -49,12 +57,26 @@ export async function updateHomecellSchedule(churchId: number, payload: {
   });
 }
 
-export async function fetchServiceSchedules(churchId: number) {
-  return apiRequest<{ data: ServiceScheduleRecord[] }>(`churches/${churchId}/service-schedules`);
+export async function fetchServiceSchedules(churchId: number, branchId?: number) {
+  const params = new URLSearchParams();
+
+  if (branchId) {
+    params.set("branch_id", String(branchId));
+  }
+
+  return apiRequest<{ data: ServiceScheduleRecord[] }>(
+    `churches/${churchId}/service-schedules${params.toString() ? `?${params.toString()}` : ""}`,
+  );
 }
 
-export async function fetchBranches(churchId: number) {
-  return apiRequest<BranchListResponse>(`branches?church_id=${churchId}`);
+export async function fetchBranches(churchId: number, branchId?: number) {
+  const params = new URLSearchParams({ church_id: String(churchId) });
+
+  if (branchId) {
+    params.set("branch_id", String(branchId));
+  }
+
+  return apiRequest<BranchListResponse>(`branches?${params.toString()}`);
 }
 
 export async function fetchBranch(branchId: number) {
@@ -81,11 +103,15 @@ export async function deleteBranchTag(branchTagId: number) {
   });
 }
 
-export async function fetchBranchParents(excludeBranchId?: number) {
+export async function fetchBranchParents(excludeBranchId?: number, rootBranchId?: number) {
   const params = new URLSearchParams();
 
   if (excludeBranchId) {
     params.set("exclude_branch_id", String(excludeBranchId));
+  }
+
+  if (rootBranchId) {
+    params.set("root_branch_id", String(rootBranchId));
   }
 
   return apiRequest<BranchParentOptionsResponse>(
@@ -427,8 +453,16 @@ export async function updateChurchProfile(churchId: number, payload: Record<stri
   });
 }
 
-export async function updateServiceSchedules(churchId: number, payload: Record<string, unknown>) {
-  return apiRequest<{ message: string; data: unknown }>(`churches/${churchId}/service-schedules`, {
+export async function updateServiceSchedules(churchId: number, payload: Record<string, unknown>, branchId?: number) {
+  const params = new URLSearchParams();
+
+  if (branchId) {
+    params.set("branch_id", String(branchId));
+  }
+
+  return apiRequest<{ message: string; data: unknown }>(
+    `churches/${churchId}/service-schedules${params.toString() ? `?${params.toString()}` : ""}`,
+    {
     method: "PUT",
     body: payload,
   });

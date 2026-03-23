@@ -9,8 +9,11 @@ import { useChurchSetupData } from "@/components/church-setup/use-church-setup-d
 export default function ChurchProfileRoute() {
   const session = useSessionContext();
   const searchParams = useSearchParams();
-  const { church, error } = useChurchSetupData(session);
-  const primaryAdmin = church?.users?.find((user) => user.role === "church_admin") || church?.users?.[0] || null;
+  const { church, branch, error } = useChurchSetupData(session);
+  const workspaceTitle = branch ? "Branch Profile" : "Church Profile";
+  const workspaceLabel = branch ? "Branch" : "Church";
+  const workspace = branch || church;
+  const primaryAdmin = branch?.local_admin || church?.users?.find((user) => user.role === "church_admin") || church?.users?.[0] || null;
   const updated = searchParams.get("updated") === "1";
 
   return (
@@ -21,9 +24,11 @@ export default function ChurchProfileRoute() {
             <div className="card-body">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
-                  <h4 className="mb-1">Church Profile</h4>
+                  <h4 className="mb-1">{workspaceTitle}</h4>
                   <p className="text-secondary mb-0">
-                    Everything captured during registration, separated from the service schedule and branches pages.
+                    {branch
+                      ? "Profile details for this branch workspace, separated from the branch service schedule."
+                      : "Everything captured during registration, separated from the service schedule and branches pages."}
                   </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
@@ -39,31 +44,31 @@ export default function ChurchProfileRoute() {
         </div>
 
         <div className="col-12">
-          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>Church profile updated successfully.</div>
+          <div className={`alert alert-success ${updated ? "" : "d-none"}`}>{workspaceLabel} profile updated successfully.</div>
           <div className={`alert alert-danger ${error ? "" : "d-none"}`}>{error}</div>
         </div>
 
         <div className="col-lg-8">
           <div className="card">
             <div className="card-header d-flex justify-content-between align-items-center">
-              <h5 className="mb-0">Church Information</h5>
+              <h5 className="mb-0">{workspaceLabel} Information</h5>
               <div className="d-flex gap-2 flex-wrap">
-                <span className="badge bg-light-primary">{formatLabel(church?.status) || "Loading..."}</span>
+                <span className="badge bg-light-primary">{formatLabel(workspace?.status) || "Loading..."}</span>
                 <span className="badge bg-light-secondary">
-                  Created: {formatDate(church?.created_at)}
+                  Created: {formatDate(workspace?.created_at)}
                 </span>
               </div>
             </div>
             <div className="card-body">
               <div className="row g-3">
-                <InfoCard label="Church Name" value={church?.name} />
-                <InfoCard label="Church Code" value={church?.code} />
-                <InfoCard label="State" value={church?.state} smallCol />
-                <InfoCard label="City" value={church?.city} smallCol />
-                <InfoCard label="LGA / District Area" value={church?.district_area} smallCol />
-                <InfoCard label="Address" value={church?.address} full />
-                <InfoCard label="Email" value={church?.email} />
-                <InfoCard label="Phone" value={church?.phone} />
+                <InfoCard label={`${workspaceLabel} Name`} value={workspace?.name} />
+                <InfoCard label={`${workspaceLabel} Code`} value={workspace?.code} />
+                <InfoCard label="State" value={workspace?.state} smallCol />
+                <InfoCard label="City" value={workspace?.city} smallCol />
+                <InfoCard label="LGA / District Area" value={workspace?.district_area} smallCol />
+                <InfoCard label="Address" value={workspace?.address} full />
+                <InfoCard label="Email" value={workspace?.email} />
+                <InfoCard label="Phone" value={workspace?.phone} />
               </div>
             </div>
           </div>
@@ -74,9 +79,9 @@ export default function ChurchProfileRoute() {
             </div>
             <div className="card-body">
               <div className="row g-3">
-                <InfoCard label="Full Name" value={church?.pastor_name} smallCol />
-                <InfoCard label="Phone" value={church?.pastor_phone} smallCol />
-                <InfoCard label="Email" value={church?.pastor_email} smallCol />
+                <InfoCard label="Full Name" value={workspace?.pastor_name} smallCol />
+                <InfoCard label="Phone" value={workspace?.pastor_phone} smallCol />
+                <InfoCard label="Email" value={workspace?.pastor_email} smallCol />
               </div>
             </div>
           </div>
@@ -101,14 +106,14 @@ export default function ChurchProfileRoute() {
             <div className="card-body">
               <div className="d-flex justify-content-between align-items-center border rounded p-3 mb-3">
                 <span>Finance Tracking</span>
-                <span className={`badge ${church?.finance_enabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
-                  {church?.finance_enabled ? "Enabled" : "Disabled"}
+                <span className={`badge ${workspace?.finance_enabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
+                  {workspace?.finance_enabled ? "Enabled" : "Disabled"}
                 </span>
               </div>
               <div className="d-flex justify-content-between align-items-center border rounded p-3">
                 <span>Special Services</span>
-                <span className={`badge ${church?.special_services_enabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
-                  {church?.special_services_enabled ? "Enabled" : "Disabled"}
+                <span className={`badge ${workspace?.special_services_enabled ? "bg-light-success text-success" : "bg-light-danger text-danger"}`}>
+                  {workspace?.special_services_enabled ? "Enabled" : "Disabled"}
                 </span>
               </div>
             </div>

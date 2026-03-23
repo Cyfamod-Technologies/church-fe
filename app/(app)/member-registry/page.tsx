@@ -58,7 +58,7 @@ export default function MemberRegistryRoute() {
       try {
         const [churchResponse, branchesResponse, unitsResponse, entriesResponse] = await Promise.all([
           fetchChurch(churchId),
-          activeBranchId ? Promise.resolve({ data: [session.branch] as BranchRecord[] }) : fetchBranches(churchId),
+          fetchBranches(churchId, activeBranchId),
           fetchChurchUnits(churchId),
           fetchMemberEntries(churchId, activeBranchId, 100),
         ]);
@@ -87,7 +87,7 @@ export default function MemberRegistryRoute() {
     return () => {
       active = false;
     };
-  }, [activeBranchId, churchId, session.branch]);
+  }, [activeBranchId, churchId]);
 
   const filteredEntries = useMemo(() => entries.filter((entry) => {
     const branchMatches = !branchFilter
