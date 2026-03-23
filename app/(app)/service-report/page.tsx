@@ -1,12 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate } from "@/lib/format";
 import { formatCurrency, getRangeDates, getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
 import {
+  deleteAttendanceRecord,
   fetchAttendanceRecordsWithFilters,
   fetchAttendanceSummary,
   fetchBranches,
@@ -17,6 +19,7 @@ import type { AttendanceRecord, AttendanceSummaryResponse, BranchRecord } from "
 
 export default function ServiceReportRoute() {
   const session = useSessionContext();
+  const router = useRouter();
   const churchId = getChurchId(session);
   const activeBranchId = getBranchId(session);
 
@@ -205,6 +208,37 @@ export default function ServiceReportRoute() {
     window.URL.revokeObjectURL(downloadUrl);
   }
 
+  async function handleDeleteRecord(record: AttendanceRecord) {
+    setErrorMessage("");
+
+    if (!window.confirm(`Delete ${record.service_label || "this attendance record"}?`)) {
+      return;
+    }
+
+    try {
+      await deleteAttendanceRecord(record.id);
+
+      const range = getRangeDates(date, period);
+      const effectiveBranchId = Number(branchId || 0) || undefined;
+      const [summaryResponse, listResponse] = await Promise.all([
+        fetchAttendanceSummary(churchId, effectiveBranchId, period, date),
+        fetchAttendanceRecordsWithFilters({
+          churchId,
+          branchId: effectiveBranchId,
+          serviceType: serviceType || undefined,
+          dateFrom: range.start,
+          dateTo: range.end,
+          perPage: 200,
+        }),
+      ]);
+
+      setSummary(summaryResponse.data || null);
+      setRecords(listResponse.data || []);
+    } catch (deleteError) {
+      setErrorMessage(deleteError instanceof Error ? deleteError.message : "Unable to delete the selected attendance record.");
+    }
+  }
+
   if (isLoading) {
     return <TemplateLoader />;
   }
@@ -338,12 +372,13 @@ export default function ServiceReportRoute() {
                       <th>Finance</th>
                       <th>Notes</th>
                       <th>Recorded By</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {records.length === 0 ? (
                       <tr>
-                        <td className="text-center text-muted py-4" colSpan={14}>No service records found for the selected filters.</td>
+                        <td className="text-center text-muted py-4" colSpan={15}>No service records found for the selected filters.</td>
                       </tr>
                     ) : records.map((record) => {
                       const branchLabel = record.branch?.name || `${session.church?.name || "Main Church"} (Main Church)`;
@@ -374,6 +409,26 @@ export default function ServiceReportRoute() {
                           </td>
                           <td className="small text-secondary">{record.notes || "--"}</td>
                           <td>{resolveRecordedBy(record)}</td>
+                          <td>
+                            <div className="d-flex gap-2">
+                              <button
+                                className="btn btn-sm btn-light-primary"
+                                onClick={() => router.push(`/attendance?record_id=${record.id}`)}
+                                type="button"
+                              >
+                                <i className="ti ti-edit me-1" />
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-sm btn-light-danger"
+                                onClick={() => void handleDeleteRecord(record)}
+                                type="button"
+                              >
+                                <i className="ti ti-trash me-1" />
+                                Delete
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       );
                     })}

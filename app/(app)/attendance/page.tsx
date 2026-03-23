@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { type Dispatch, type FormEvent, type SetStateAction, useEffect, useMemo, useState } from "react";
+import { ModalShell } from "@/components/ui/modal-shell";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate, formatTime } from "@/lib/format";
 import {
   createAttendanceRecord,
+  deleteAttendanceRecord,
   fetchAttendanceRecord,
   fetchAttendanceRecords,
   fetchAttendanceRecordsWithFilters,
@@ -87,6 +89,7 @@ export default function AttendanceRoute() {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [summary, setSummary] = useState<AttendanceSummaryResponse["data"] | null>(null);
   const [currentEditRecordId, setCurrentEditRecordId] = useState<number | null>(null);
+  const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -150,6 +153,7 @@ export default function AttendanceRoute() {
 
           fillFormFromAttendanceRecord(recordResponse.data, nextServices, setForm, setCurrentEditRecordId);
           setSuccessMessage("Selected attendance record loaded for editing.");
+          setIsAttendanceModalOpen(true);
         } else {
           setForm(emptyAttendanceForm(sessionBranchId ? String(sessionBranchId) : ""));
           setCurrentEditRecordId(null);
@@ -280,6 +284,7 @@ export default function AttendanceRoute() {
   function resetForm() {
     setForm(emptyAttendanceForm(sessionBranchId ? String(sessionBranchId) : ""));
     setCurrentEditRecordId(null);
+    setIsAttendanceModalOpen(false);
     setSuccessMessage("");
     setErrorMessage("");
 
@@ -298,10 +303,36 @@ export default function AttendanceRoute() {
     setRecords(recordsResponse.data || []);
   }
 
+  async function handleDeleteRecord(record: AttendanceRecord) {
+    setSuccessMessage("");
+    setErrorMessage("");
+
+    if (!window.confirm(`Delete ${record.service_label || "this attendance record"}?`)) {
+      return;
+    }
+
+    try {
+      await deleteAttendanceRecord(record.id);
+
+      if (currentEditRecordId === record.id) {
+        setForm(emptyAttendanceForm(sessionBranchId ? String(sessionBranchId) : form.branchId));
+        setCurrentEditRecordId(null);
+        setIsAttendanceModalOpen(false);
+      }
+
+      const nextBranchId = sessionBranchId ? String(sessionBranchId) : form.branchId;
+      await reloadSummaryAndRecords(nextBranchId);
+      setSuccessMessage("Attendance record deleted successfully.");
+    } catch (deleteError) {
+      setErrorMessage(deleteError instanceof Error ? deleteError.message : "Unable to delete attendance record.");
+    }
+  }
+
   function startEditRecord(record: AttendanceRecord) {
     fillFormFromAttendanceRecord(record, services, setForm, setCurrentEditRecordId);
     setSuccessMessage("Attendance record loaded for editing.");
     setErrorMessage("");
+    setIsAttendanceModalOpen(true);
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     if (preloadRecordId) {
@@ -357,6 +388,7 @@ export default function AttendanceRoute() {
       await reloadSummaryAndRecords(nextBranchId);
       setForm(emptyAttendanceForm(nextBranchId));
       setCurrentEditRecordId(null);
+      setIsAttendanceModalOpen(false);
 
       if (preloadRecordId) {
         router.replace("/attendance");
@@ -378,22 +410,6 @@ export default function AttendanceRoute() {
     <div className="container-fluid">
       <div className="row">
         <div className="col-12">
-          <div className="card">
-            <div className="card-body">
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2">
-                <div>
-                  <h4 className="mb-1">Record Service Attendance</h4>
-                  <p className="text-secondary mb-0">Submit one attendance record per service per day. If a record already exists for the selected date and service, this page switches into edit mode.</p>
-                </div>
-                <div className="d-flex gap-2 flex-wrap">
-                  <Link className="btn btn-outline-primary" href="/service-report">View Reports</Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-12">
           <div className={`alert alert-success ${successMessage ? "" : "d-none"}`} role="alert">{successMessage}</div>
           <div className={`alert alert-warning ${errorMessage ? "" : "d-none"}`} role="alert">{errorMessage}</div>
         </div>
@@ -402,153 +418,6 @@ export default function AttendanceRoute() {
           <div className="alert alert-info">
             <i className="ti ti-info-circle me-2" />
             <strong>One record per service per day:</strong> choose the same date and service again and the existing record will load for editing instead of creating a duplicate.
-          </div>
-        </div>
-
-        <div className="col-12">
-          <div className="card">
-            <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-              <h5 className="mb-0">
-                <i className="ti ti-users me-2" />
-                {isEditing ? "Edit Attendance Record" : "Add Attendance Record"}
-              </h5>
-              {isEditing ? (
-                <button className="btn btn-outline-secondary btn-sm" onClick={resetForm} type="button">
-                  Cancel Edit
-                </button>
-              ) : null}
-            </div>
-            <div className="card-body">
-              <form onSubmit={handleSubmit}>
-                <div className="border rounded p-3 mb-4">
-                  <h6 className="mb-3">Service Details</h6>
-                  <div className="row">
-                    <div className="col-md-3">
-                      <div className="mb-3">
-                        <label className="form-label">Date <span className="text-danger">*</span></label>
-                        <input
-                          className="form-control"
-                          onChange={(event) => updateField("serviceDate", event.target.value)}
-                          required
-                          type="date"
-                          value={form.serviceDate}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="mb-3">
-                        <label className="form-label">Branch</label>
-                        <select
-                          className="form-select"
-                          disabled={Boolean(sessionBranchId)}
-                          onChange={(event) => updateField("branchId", event.target.value)}
-                          value={form.branchId}
-                        >
-                          <option value="">{session.church?.name ? `${session.church.name} (Main Church)` : "Main Church"}</option>
-                          {branches.map((branch) => (
-                            <option key={branch.id} value={branch.id}>
-                              {branch.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className="col-md-3">
-                      <div className="mb-3">
-                        <label className="form-label">Service <span className="text-danger">*</span></label>
-                        <select
-                          className="form-select"
-                          onChange={(event) => updateField("serviceValue", event.target.value)}
-                          required
-                          value={form.serviceValue}
-                        >
-                          <option value="">{serviceOptions.length ? "Select service" : "Loading services..."}</option>
-                          {serviceOptions.map((option) => (
-                            <option key={option.value} value={option.value}>
-                              {option.text}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <div className={`col-md-3 ${selectedService?.manual ? "" : "d-none"}`}>
-                      <div className="mb-3">
-                        <label className="form-label">Service Name</label>
-                        <input
-                          className="form-control"
-                          onChange={(event) => updateField("specialName", event.target.value)}
-                          placeholder="e.g. Thanksgiving Service"
-                          type="text"
-                          value={form.specialName}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className={`alert alert-info ${isWOSEWeek ? "" : "d-none"}`}>
-                    <i className="ti ti-info-circle me-2" />
-                    <strong>Week of Spiritual Emphasis:</strong> This is the first week of the month. WOSE services are available (Wed, Thu, Fri).
-                  </div>
-                </div>
-
-                <div className="border rounded p-3 mb-4">
-                  <h6 className="mb-3">Main Attendance Count</h6>
-                  <div className="row">
-                    <NumberInput className="col-md-3" label="Male *" onChange={(value) => updateField("maleCount", value)} value={form.maleCount} />
-                    <NumberInput className="col-md-3" label="Female *" onChange={(value) => updateField("femaleCount", value)} value={form.femaleCount} />
-                    <NumberInput className="col-md-3" label="Children *" onChange={(value) => updateField("childrenCount", value)} value={form.childrenCount} />
-                    <div className="col-md-3">
-                      <div className="mb-3">
-                        <label className="form-label">Total</label>
-                        <input className="form-control bg-light fw-bold" readOnly type="text" value={String(totalCount)} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded p-3 mb-4">
-                  <h6 className="mb-3">First Timers &amp; New Converts</h6>
-                  <div className="row">
-                    <NumberInput className="col-md-4" helpText="New visitors to the church" label="First Timers" onChange={(value) => updateField("firstTimersCount", value)} value={form.firstTimersCount} />
-                    <NumberInput className="col-md-4" helpText="Gave life to Christ today" label="New Converts" onChange={(value) => updateField("newConvertsCount", value)} value={form.newConvertsCount} />
-                    <NumberInput className="col-md-4" helpText="Rededicated their life" label="Rededications" onChange={(value) => updateField("rededications", value)} value={form.rededications} />
-                  </div>
-                </div>
-
-                <div className={`border rounded p-3 mb-4 ${financeEnabled ? "" : "d-none"}`}>
-                  <div className="d-flex justify-content-between align-items-center mb-3">
-                    <h6 className="mb-0">Offering &amp; Finance (Optional)</h6>
-                    <span className="badge bg-light-secondary">Optional</span>
-                  </div>
-                  <div className="row">
-                    <NumberInput className="col-md-4" label="Main Offering (₦)" onChange={(value) => updateField("mainOffering", value)} value={form.mainOffering} />
-                    <NumberInput className="col-md-4" label="Tithe (₦)" onChange={(value) => updateField("tithe", value)} value={form.tithe} />
-                    <NumberInput className="col-md-4" label="Special Offering (₦)" onChange={(value) => updateField("specialOffering", value)} value={form.specialOffering} />
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <label className="form-label">Notes (Optional)</label>
-                  <textarea
-                    className="form-control"
-                    onChange={(event) => updateField("attendanceNotes", event.target.value)}
-                    placeholder="Any additional notes about this service..."
-                    rows={2}
-                    value={form.attendanceNotes}
-                  />
-                </div>
-
-                <div className="d-flex gap-2">
-                  <button className="btn btn-primary" disabled={isSubmitting} type="submit">
-                    <i className={`ti ${isSubmitting ? "ti-loader" : "ti-check"} me-1`} />
-                    {isEditing ? (isSubmitting ? "Updating..." : "Update Attendance") : (isSubmitting ? "Saving..." : "Save Attendance")}
-                  </button>
-                  <button className="btn btn-outline-secondary" onClick={resetForm} type="button">
-                    {isEditing ? "Cancel Edit" : "Clear Form"}
-                  </button>
-                </div>
-              </form>
-            </div>
           </div>
         </div>
 
@@ -580,6 +449,105 @@ export default function AttendanceRoute() {
                 value={summary?.highest_service ? `${summary.highest_service.total_count} (${summary.highest_service.service_label})` : "No records yet"}
                 valueClass="fw-bold text-success"
               />
+            </div>
+          </div>
+        </div>
+
+        <div className="col-12">
+          <div className="card">
+            <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <h5 className="mb-0">
+                <i className="ti ti-users me-2" />
+                {isEditing ? "Edit Attendance Record" : "Add Attendance Record"}
+              </h5>
+              {isEditing ? (
+                <button className="btn btn-outline-secondary btn-sm" onClick={resetForm} type="button">
+                  Cancel Edit
+                </button>
+              ) : null}
+            </div>
+            <div className="card-body">
+              <div className="border rounded p-3 mb-4">
+                <h6 className="mb-3">Service Details</h6>
+                <div className="row">
+                  <div className="col-md-3">
+                    <div className="mb-3">
+                      <label className="form-label">Date <span className="text-danger">*</span></label>
+                      <input
+                        className="form-control"
+                        onChange={(event) => updateField("serviceDate", event.target.value)}
+                        required
+                        type="date"
+                        value={form.serviceDate}
+                      />
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="mb-3">
+                      <label className="form-label">Branch</label>
+                      <select
+                        className="form-select"
+                        disabled={Boolean(sessionBranchId)}
+                        onChange={(event) => updateField("branchId", event.target.value)}
+                        value={form.branchId}
+                      >
+                        <option value="">{session.church?.name ? `${session.church.name} (Main Church)` : "Main Church"}</option>
+                        {branches.map((branch) => (
+                          <option key={branch.id} value={branch.id}>
+                            {branch.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="col-md-3">
+                    <div className="mb-3">
+                      <label className="form-label">Service <span className="text-danger">*</span></label>
+                      <select
+                        className="form-select"
+                        onChange={(event) => updateField("serviceValue", event.target.value)}
+                        required
+                        value={form.serviceValue}
+                      >
+                        <option value="">{serviceOptions.length ? "Select service" : "Loading services..."}</option>
+                        {serviceOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.text}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className={`col-md-3 ${selectedService?.manual ? "" : "d-none"}`}>
+                    <div className="mb-3">
+                      <label className="form-label">Service Name</label>
+                      <input
+                        className="form-control"
+                        onChange={(event) => updateField("specialName", event.target.value)}
+                        placeholder="e.g. Thanksgiving Service"
+                        type="text"
+                        value={form.specialName}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`alert alert-info ${isWOSEWeek ? "" : "d-none"}`}>
+                  <i className="ti ti-info-circle me-2" />
+                  <strong>Week of Spiritual Emphasis:</strong> This is the first week of the month. WOSE services are available (Wed, Thu, Fri).
+                </div>
+
+                <div className={`d-flex justify-content-end ${selectedService ? "" : "d-none"}`}>
+                  <button
+                    className={`btn ${isEditing ? "btn-outline-secondary" : "btn-primary"}`}
+                    onClick={() => setIsAttendanceModalOpen(true)}
+                    type="button"
+                  >
+                    <i className={`ti ${isEditing ? "ti-edit" : "ti-plus"} me-1`} />
+                    {isEditing ? "Edit Attendance" : "Add Attendance"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -629,10 +597,16 @@ export default function AttendanceRoute() {
                           <td><span className="text-primary">{record.new_converts_count ?? 0}</span></td>
                           <td>{record.recorded_by?.name || record.recordedBy?.name || "--"}</td>
                           <td>
-                            <button className="btn btn-sm btn-light-primary" onClick={() => startEditRecord(record)} type="button">
-                              <i className="ti ti-edit me-1" />
-                              Edit
-                            </button>
+                            <div className="d-flex gap-2">
+                              <button className="btn btn-sm btn-light-primary" onClick={() => startEditRecord(record)} type="button">
+                                <i className="ti ti-edit me-1" />
+                                Edit
+                              </button>
+                              <button className="btn btn-sm btn-light-danger" onClick={() => void handleDeleteRecord(record)} type="button">
+                                <i className="ti ti-trash me-1" />
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -648,6 +622,89 @@ export default function AttendanceRoute() {
           </div>
         </div>
       </div>
+
+      {isAttendanceModalOpen ? (
+        <ModalShell
+          footer={(
+            <>
+              <button className="btn btn-outline-secondary" onClick={() => setIsAttendanceModalOpen(false)} type="button">
+                Close
+              </button>
+              {isEditing ? (
+                <button className="btn btn-outline-secondary" onClick={resetForm} type="button">
+                  Cancel Edit
+                </button>
+              ) : null}
+              <button className="btn btn-primary" disabled={isSubmitting} form="attendance-entry-form" type="submit">
+                <i className={`ti ${isSubmitting ? "ti-loader" : "ti-check"} me-1`} />
+                {isEditing ? (isSubmitting ? "Updating..." : "Update Attendance") : (isSubmitting ? "Saving..." : "Save Attendance")}
+              </button>
+            </>
+          )}
+          onClose={() => setIsAttendanceModalOpen(false)}
+          size="lg"
+          title={isEditing ? "Edit Attendance Record" : "Add Attendance Record"}
+        >
+          <form id="attendance-entry-form" onSubmit={handleSubmit}>
+            <div className="border rounded p-3 mb-4">
+              <h6 className="mb-3">Main Attendance Count</h6>
+              <div className="row">
+                <NumberInput className="col-md-3" label="Male *" onChange={(value) => updateField("maleCount", value)} value={form.maleCount} />
+                <NumberInput className="col-md-3" label="Female *" onChange={(value) => updateField("femaleCount", value)} value={form.femaleCount} />
+                <NumberInput className="col-md-3" label="Children *" onChange={(value) => updateField("childrenCount", value)} value={form.childrenCount} />
+                <div className="col-md-3">
+                  <div className="mb-3">
+                    <label className="form-label">Total</label>
+                    <input className="form-control bg-light fw-bold" readOnly type="text" value={String(totalCount)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="border rounded p-3 mb-4">
+              <h6 className="mb-3">First Timers &amp; New Converts</h6>
+              <div className="row">
+                <NumberInput className="col-md-4" helpText="New visitors to the church" label="First Timers" onChange={(value) => updateField("firstTimersCount", value)} value={form.firstTimersCount} />
+                <NumberInput className="col-md-4" helpText="Gave life to Christ today" label="New Converts" onChange={(value) => updateField("newConvertsCount", value)} value={form.newConvertsCount} />
+                <NumberInput className="col-md-4" helpText="Rededicated their life" label="Rededications" onChange={(value) => updateField("rededications", value)} value={form.rededications} />
+              </div>
+            </div>
+
+            <div className={`border rounded p-3 mb-4 ${financeEnabled ? "" : "d-none"}`}>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="mb-0">Offering &amp; Finance (Optional)</h6>
+                <span className="badge bg-light-secondary">Optional</span>
+              </div>
+              <div className="row">
+                <NumberInput className="col-md-4" label="Main Offering (₦)" onChange={(value) => updateField("mainOffering", value)} value={form.mainOffering} />
+                <NumberInput className="col-md-4" label="Tithe (₦)" onChange={(value) => updateField("tithe", value)} value={form.tithe} />
+                <NumberInput className="col-md-4" label="Special Offering (₦)" onChange={(value) => updateField("specialOffering", value)} value={form.specialOffering} />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className="form-label">Notes (Optional)</label>
+              <textarea
+                className="form-control"
+                onChange={(event) => updateField("attendanceNotes", event.target.value)}
+                placeholder="Any additional notes about this service..."
+                rows={2}
+                value={form.attendanceNotes}
+              />
+            </div>
+
+            <div className="card bg-light mb-0">
+              <div className="card-body">
+                <h6 className="mb-3">Current Entry Summary</h6>
+                <SummaryRow label="Service" value={selectedService?.label || buildServiceLabel(selectedService as SelectedServiceOption, form.specialName)} />
+                <SummaryRow label="Total Attendance" value={String(totalCount)} />
+                <SummaryRow label="First Timers" value={String(toNumber(form.firstTimersCount))} valueClass="text-success fw-bold" />
+                <SummaryRow label="New Converts" value={String(toNumber(form.newConvertsCount))} valueClass="text-primary fw-bold" />
+              </div>
+            </div>
+          </form>
+        </ModalShell>
+      ) : null}
     </div>
   );
 }

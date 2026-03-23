@@ -242,6 +242,12 @@ export async function updateAttendanceRecord(recordId: number, payload: Record<s
   });
 }
 
+export async function deleteAttendanceRecord(recordId: number) {
+  return apiRequest<{ message: string }>(`attendance/${recordId}`, {
+    method: "DELETE",
+  });
+}
+
 export async function fetchHomecellAttendanceSummary(churchId: number, branchId?: number, homecellId?: number, period = "weekly") {
   const params = new URLSearchParams({
     church_id: String(churchId),
