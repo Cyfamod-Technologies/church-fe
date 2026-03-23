@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { BranchHierarchyFilter } from "@/components/filters/branch-hierarchy-filter";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { ModalShell } from "@/components/ui/modal-shell";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate } from "@/lib/format";
+import { getDescendantBranchIds } from "@/lib/branch-hierarchy";
 import { formatCurrency, getPrimaryLeaderName, getRangeDates, getTodayDate, percentage } from "@/lib/homecell-utils";
 import { isHomecellLeaderSession } from "@/lib/session";
+import { buildWsfWorkbookXml, formatFileLabel } from "@/lib/wsf-export";
 import {
   fetchBranches,
   fetchHomecellAttendanceRecordsWithFilters,
@@ -129,14 +132,15 @@ export default function HomecellReportsRoute() {
 
   const scopedHomecells = useMemo(() => {
     const selectedBranchId = Number(branchFilter || 0) || null;
+    const scopedBranchIds = selectedBranchId ? getDescendantBranchIds(branches, selectedBranchId) : [];
     return homecells.filter((homecell) => {
       if (activeHomecellId) {
         return homecell.id === activeHomecellId;
       }
 
-      return !selectedBranchId || homecell.branch?.id === selectedBranchId;
+      return !selectedBranchId || scopedBranchIds.includes(Number(homecell.branch?.id || 0));
     });
-  }, [activeHomecellId, branchFilter, homecells]);
+  }, [activeHomecellId, branchFilter, branches, homecells]);
 
   const rows = useMemo(() => {
     const aggregatedByHomecell = new Map<number, ReportRow>();
@@ -255,38 +259,44 @@ export default function HomecellReportsRoute() {
     };
   }, [records.length, rows]);
 
-  function exportCsv() {
-    if (rows.length === 0) {
-      setErrorMessage("There is no report data to export for the current filters.");
-      return;
+  async function exportWsfExcel() {
+    setErrorMessage("");
+
+    try {
+      const range = getRangeDates(date, period);
+      const effectiveBranchId = isHomecellLeader ? (session.homecell?.branch?.id || branchId) : (Number(branchFilter || 0) || undefined);
+      const response = await fetchHomecellAttendanceRecordsWithFilters({
+        churchId,
+        branchId: effectiveBranchId,
+        dateFrom: range.start,
+        dateTo: range.end,
+        limit: 1000,
+      });
+      const exportRecords = response.data || [];
+
+      if (exportRecords.length === 0) {
+        setErrorMessage("There is no report data to export for the current filters.");
+        return;
+      }
+
+      const workbookXml = buildWsfWorkbookXml({
+        branchMap: new Map(branches.map((branch) => [branch.id, branch])),
+        churchName: session.church?.name || "LFC Jahi",
+        period,
+        records: exportRecords,
+        reportDate: date,
+      });
+
+      const blob = new Blob([workbookXml], { type: "application/vnd.ms-excel" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `wsf-report-${formatFileLabel(date || getTodayDate())}.xls`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (exportError) {
+      setErrorMessage(exportError instanceof Error ? exportError.message : "Unable to export the WSF report.");
     }
-
-    const lines = [
-      ["Homecell", "Leader", "Branch", "Status", "Male", "Female", "Children", "Total", "Last Meeting", "Records Submitted", "First Timers", "New Converts", "Offering"].join(","),
-      ...rows.map((row) => [
-        row.homecell_name,
-        row.leader_name,
-        row.branch_name || "Unassigned",
-        row.status,
-        row.male_count,
-        row.female_count,
-        row.children_count,
-        row.total_count,
-        row.latest_meeting_date || "",
-        row.records.length,
-        row.first_timers_count,
-        row.new_converts_count,
-        row.offering_amount ? row.offering_amount.toFixed(2) : "",
-      ].map((value) => `"${String(value ?? "").replace(/"/g, "\"\"")}"`).join(",")),
-    ];
-
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `homecell-report-${date}.csv`;
-    link.click();
-    window.URL.revokeObjectURL(url);
   }
 
   if (isLoading) {
@@ -309,9 +319,9 @@ export default function HomecellReportsRoute() {
                     <i className="ti ti-clipboard-plus me-1" />
                     Record Attendance
                   </Link>
-                  <button className="btn btn-primary" onClick={exportCsv} type="button">
-                    <i className="ti ti-download me-1" />
-                    Export CSV
+                  <button className="btn btn-primary" onClick={exportWsfExcel} type="button">
+                    <i className="ti ti-file-spreadsheet me-1" />
+                    Export Excel
                   </button>
                 </div>
               </div>
@@ -355,20 +365,12 @@ export default function HomecellReportsRoute() {
                   <option value="monthly">This Month</option>
                 </select>
                 <input className="form-control form-control-sm" onChange={(event) => setDate(event.target.value)} style={{ width: 170 }} type="date" value={date} />
-                <select
-                  className="form-select form-select-sm"
+                <BranchHierarchyFilter
+                  branches={branches}
                   disabled={Boolean(branchId)}
-                  onChange={(event) => setBranchFilter(event.target.value)}
-                  style={{ width: 220 }}
+                  onChange={setBranchFilter}
                   value={branchFilter}
-                >
-                  <option value="">All Branches</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
+                />
                 <select className="form-select form-select-sm" onChange={(event) => setStatusFilter(event.target.value)} style={{ width: 170 }} value={statusFilter}>
                   <option value="">All Statuses</option>
                   <option value="submitted">Submitted</option>

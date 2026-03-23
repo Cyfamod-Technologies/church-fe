@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { BranchHierarchyFilter } from "@/components/filters/branch-hierarchy-filter";
 import { TemplateLoader } from "@/components/ui/template-loader";
 import { useSessionContext } from "@/components/providers/auth-guard";
 import { formatDate } from "@/lib/format";
@@ -157,20 +158,12 @@ export default function MemberReportRoute() {
                   <option value="new_convert">New Converts</option>
                   <option value="rededication">Re-Dedications</option>
                 </select>
-                <select
-                  className="form-select form-select-sm"
+                <BranchHierarchyFilter
+                  branches={branches}
                   disabled={Boolean(activeBranchId)}
-                  onChange={(event) => setBranchId(event.target.value)}
-                  style={{ width: 220 }}
+                  onChange={setBranchId}
                   value={branchId}
-                >
-                  <option value="">All Branches</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
+                />
                 <input className="form-control form-control-sm" onChange={(event) => setDate(event.target.value)} style={{ width: 170 }} type="date" value={date} />
                 <input
                   className="form-control form-control-sm"
