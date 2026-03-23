@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <link href="/assets/images/logo/favicon.png" rel="icon" type="image/x-icon" />
         <link href="/assets/images/logo/favicon.png" rel="shortcut icon" type="image/x-icon" />
