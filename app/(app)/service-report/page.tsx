@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BranchHierarchyFilter } from "@/components/filters/branch-hierarchy-filter";
 import { TemplateLoader } from "@/components/ui/template-loader";
@@ -10,9 +10,9 @@ import { formatDate } from "@/lib/format";
 import { formatCurrency, getRangeDates, getTodayDate, looksLikeRoleLabel } from "@/lib/homecell-utils";
 import {
   deleteAttendanceRecord,
+  fetchBranches,
   fetchAttendanceRecordsWithFilters,
   fetchAttendanceSummary,
-  fetchBranches,
   getBranchId,
   getChurchId,
 } from "@/lib/workspace-api";
@@ -21,15 +21,18 @@ import type { AttendanceRecord, AttendanceSummaryResponse, BranchRecord } from "
 export default function ServiceReportRoute() {
   const session = useSessionContext();
   const router = useRouter();
+  const pathname = usePathname();
   const churchId = getChurchId(session);
   const activeBranchId = getBranchId(session);
+  const reportScope = pathname === "/service-report-church" ? "church" : "current";
+  const scopeBranchId = reportScope === "church" ? undefined : activeBranchId || undefined;
 
   const [branches, setBranches] = useState<BranchRecord[]>([]);
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [summary, setSummary] = useState<AttendanceSummaryResponse["data"] | null>(null);
   const [period, setPeriod] = useState<"weekly" | "monthly">("weekly");
   const [date, setDate] = useState(getTodayDate());
-  const [branchId, setBranchId] = useState(activeBranchId ? String(activeBranchId) : "");
+  const [branchId, setBranchId] = useState("");
   const [serviceType, setServiceType] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +41,12 @@ export default function ServiceReportRoute() {
     let active = true;
 
     async function loadBranches() {
+      if (reportScope !== "church") {
+        setBranches([]);
+        setBranchId("");
+        return;
+      }
+
       try {
         const response = await fetchBranches(churchId, activeBranchId);
 
@@ -48,7 +57,7 @@ export default function ServiceReportRoute() {
         setBranches(response.data || []);
       } catch (loadError) {
         if (active) {
-          setErrorMessage(loadError instanceof Error ? loadError.message : "Unable to load the service report right now.");
+          setErrorMessage(loadError instanceof Error ? loadError.message : "Unable to load branch options for this report.");
         }
       }
     }
@@ -58,7 +67,7 @@ export default function ServiceReportRoute() {
     return () => {
       active = false;
     };
-  }, [activeBranchId, churchId]);
+  }, [activeBranchId, churchId, reportScope]);
 
   useEffect(() => {
     let active = true;
@@ -69,10 +78,12 @@ export default function ServiceReportRoute() {
 
       try {
         const range = getRangeDates(date, period);
-        const effectiveBranchId = Number(branchId || 0) || undefined;
+        const effectiveBranchId = reportScope === "church"
+          ? Number(branchId || 0) || undefined
+          : scopeBranchId;
 
         const [summaryResponse, listResponse] = await Promise.all([
-          fetchAttendanceSummary(churchId, effectiveBranchId, period, date),
+          fetchAttendanceSummary(churchId, effectiveBranchId, period, date, reportScope),
           fetchAttendanceRecordsWithFilters({
             churchId,
             branchId: effectiveBranchId,
@@ -80,6 +91,7 @@ export default function ServiceReportRoute() {
             dateFrom: range.start,
             dateTo: range.end,
             perPage: 200,
+            scope: reportScope,
           }),
         ]);
 
@@ -106,7 +118,7 @@ export default function ServiceReportRoute() {
     return () => {
       active = false;
     };
-  }, [branchId, churchId, date, period, serviceType]);
+  }, [branchId, churchId, date, period, reportScope, scopeBranchId, serviceType]);
 
   const range = useMemo(() => getRangeDates(date, period), [date, period]);
 
@@ -218,9 +230,11 @@ export default function ServiceReportRoute() {
       await deleteAttendanceRecord(record.id);
 
       const range = getRangeDates(date, period);
-      const effectiveBranchId = Number(branchId || 0) || undefined;
+      const effectiveBranchId = reportScope === "church"
+        ? Number(branchId || 0) || undefined
+        : scopeBranchId;
       const [summaryResponse, listResponse] = await Promise.all([
-        fetchAttendanceSummary(churchId, effectiveBranchId, period, date),
+        fetchAttendanceSummary(churchId, effectiveBranchId, period, date, reportScope),
         fetchAttendanceRecordsWithFilters({
           churchId,
           branchId: effectiveBranchId,
@@ -228,6 +242,7 @@ export default function ServiceReportRoute() {
           dateFrom: range.start,
           dateTo: range.end,
           perPage: 200,
+          scope: reportScope,
         }),
       ]);
 
@@ -237,6 +252,12 @@ export default function ServiceReportRoute() {
       setErrorMessage(deleteError instanceof Error ? deleteError.message : "Unable to delete the selected attendance record.");
     }
   }
+
+  const scopeDescription = reportScope === "church"
+    ? "all branches under this church"
+    : activeBranchId
+      ? "the current logged-in branch"
+      : "the main church only";
 
   if (isLoading) {
     return <TemplateLoader />;
@@ -251,7 +272,11 @@ export default function ServiceReportRoute() {
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                 <div>
                   <h4 className="mb-1">Service Report</h4>
-                  <p className="text-secondary mb-0">Review service attendance with the same full breakdown used in Recent Attendance Records, plus period filters and export.</p>
+                  <p className="text-secondary mb-0">
+                    {reportScope === "church"
+                      ? "Review service attendance across all branches under this church, with period filters and export."
+                      : "Review service attendance for the current workspace, with period filters and export."}
+                  </p>
                 </div>
                 <div className="d-flex gap-2 flex-wrap">
                   <button className="btn btn-outline-success" onClick={exportRecordsAsExcel} type="button">
@@ -301,7 +326,7 @@ export default function ServiceReportRoute() {
         <div className="col-12">
           <div className="alert alert-info">
             <i className="ti ti-info-circle me-2" />
-            <strong>Coverage:</strong> Summary cards use the selected period and branch filters. The records table also applies the optional service type filter.
+            <strong>Coverage:</strong> This report shows service records for {scopeDescription}. The records table also applies the selected period and optional service type filter.
             {breakdownEntries.length ? (
               <span className="d-block mt-2">
                 {breakdownEntries.map(([type, item]) => (
@@ -324,12 +349,13 @@ export default function ServiceReportRoute() {
                   <option value="monthly">This Month</option>
                 </select>
                 <input className="form-control form-control-sm" onChange={(event) => setDate(event.target.value)} style={{ width: 170 }} type="date" value={date} />
-                <BranchHierarchyFilter
-                  branches={branches}
-                  disabled={Boolean(activeBranchId)}
-                  onChange={setBranchId}
-                  value={branchId}
-                />
+                {reportScope === "church" ? (
+                  <BranchHierarchyFilter
+                    branches={branches}
+                    onChange={setBranchId}
+                    value={branchId}
+                  />
+                ) : null}
                 <select
                   className="form-select form-select-sm"
                   onChange={(event) => setServiceType(event.target.value)}

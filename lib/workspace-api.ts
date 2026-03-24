@@ -186,7 +186,13 @@ export async function updateHomecell(homecellId: number, payload: Record<string,
   });
 }
 
-export async function fetchAttendanceSummary(churchId: number, branchId?: number, period = "weekly", date?: string) {
+export async function fetchAttendanceSummary(
+  churchId: number,
+  branchId?: number,
+  period = "weekly",
+  date?: string,
+  scope?: "current" | "church",
+) {
   const params = new URLSearchParams({
     church_id: String(churchId),
     period,
@@ -198,6 +204,10 @@ export async function fetchAttendanceSummary(churchId: number, branchId?: number
 
   if (date) {
     params.set("date", date);
+  }
+
+  if (scope) {
+    params.set("scope", scope);
   }
 
   return apiRequest<AttendanceSummaryResponse>(`attendance/summary?${params.toString()}`);
@@ -218,6 +228,7 @@ export async function fetchAttendanceRecordsWithFilters({
   dateFrom,
   dateTo,
   perPage = 15,
+  scope,
 }: {
   churchId: number;
   branchId?: number;
@@ -225,6 +236,7 @@ export async function fetchAttendanceRecordsWithFilters({
   dateFrom?: string;
   dateTo?: string;
   perPage?: number;
+  scope?: "current" | "church";
 }) {
   const params = new URLSearchParams({
     church_id: String(churchId),
@@ -245,6 +257,10 @@ export async function fetchAttendanceRecordsWithFilters({
 
   if (dateTo) {
     params.set("date_to", dateTo);
+  }
+
+  if (scope) {
+    params.set("scope", scope);
   }
 
   return apiRequest<AttendanceListResponse>(`attendance?${params.toString()}`);

@@ -35,7 +35,10 @@ const adminGroups: NavGroup[] = [
     title: "Services",
     icon: "stack",
     id: "services",
-    items: [{ label: "Record Attendance", href: "/attendance" }],
+    items: [
+      { label: "Record Attendance", href: "/attendance" },
+      { label: "Service Report", href: "/service-report" },
+    ],
   },
   {
     title: "Members",
@@ -60,12 +63,12 @@ const adminGroups: NavGroup[] = [
     ],
   },
   {
-    title: "Reports",
+    title: "Other Reports",
     icon: "chart",
     id: "reports",
     items: [
       { label: "Branch Report", href: "/branch-report" },
-      { label: "Service Report", href: "/service-report" },
+      { label: "Service Report", href: "/service-report-church" },
       { label: "Homecell Report", href: "/homecell-report" },
       { label: "Member Report", href: "/member-report" },
     ],

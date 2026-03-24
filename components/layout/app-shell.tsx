@@ -433,7 +433,11 @@ function getCurrentPageMeta(pathname: string, session: SessionData) {
     },
     "/service-report": {
       title: "Service Report",
-      subtitle: "Review service attendance summary and records.",
+      subtitle: "Review service attendance for the current workspace.",
+    },
+    "/service-report-church": {
+      title: "Service Report",
+      subtitle: "Review service attendance across all branches under the church.",
     },
     "/homecell-report": {
       title: "Homecell Report",
@@ -444,7 +448,7 @@ function getCurrentPageMeta(pathname: string, session: SessionData) {
       subtitle: "Review member intake and milestone activity.",
     },
     "/reports": {
-      title: "Reports",
+      title: "Other Reports",
       subtitle: "Review branch, service, homecell, and member reports.",
     },
     "/users": {
