@@ -1,4 +1,12 @@
-export type UserRole = "church_admin" | "branch_admin" | "homecell_leader" | string;
+export type UserRole =
+  | "church_admin"
+  | "branch_admin"
+  | "homecell_leader"
+  | "homecell_manager"
+  | "service_manager"
+  | "member_manager"
+  | "report_manager"
+  | string;
 
 export interface SessionUser {
   id: number;

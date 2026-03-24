@@ -173,7 +173,7 @@ export function AppShell({ session, children }: AppShellProps) {
                   </Link>
                 </li>
               ) : (
-                <li key={group.title}>
+                <li className={isGroupActive(group, pathname) ? "active" : ""} key={group.title}>
                   <a
                     aria-expanded={openGroups[group.id || ""] ? "true" : "false"}
                     href={`#${group.id}`}
@@ -523,9 +523,18 @@ function buildGroupState(
 ) {
   return navGroups.reduce<Record<string, boolean>>((accumulator, group) => {
     if (group.id) {
-      accumulator[group.id] = group.items.some((item) => pathname === item.href);
+      accumulator[group.id] = isGroupActive(group, pathname);
     }
 
     return accumulator;
   }, {});
+}
+
+function isGroupActive(
+  group: ReturnType<typeof getNavGroups>[number],
+  pathname: string,
+) {
+  return pathname === group.directHref
+    || (group.id ? pathname === `/${group.id}` : false)
+    || group.items.some((item) => pathname === item.href);
 }

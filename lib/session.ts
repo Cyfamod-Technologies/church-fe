@@ -5,6 +5,50 @@ import type { SessionData } from "@/types/session";
 const SESSION_KEY = "lfc_session";
 const SESSION_EVENT = "lfc-session-change";
 const SESSION_DURATION_MS = 5 * 60 * 60 * 1000;
+const RESTRICTED_MANAGER_DEFAULT_ROUTES: Record<string, string> = {
+  homecell_manager: "/homecell-management",
+  service_manager: "/services",
+  member_manager: "/members",
+  report_manager: "/reports",
+};
+const RESTRICTED_MANAGER_ALLOWED_PATHS: Record<string, string[]> = {
+  homecell_manager: [
+    "/homecell-management",
+    "/homecells",
+    "/homecell-leaders",
+    "/homecell-attendance",
+    "/homecell-records",
+    "/homecell-reports",
+    "/profile",
+  ],
+  service_manager: [
+    "/services",
+    "/attendance",
+    "/service-report",
+    "/profile",
+  ],
+  member_manager: [
+    "/members",
+    "/add-member",
+    "/member-registry",
+    "/church-units",
+    "/profile",
+  ],
+  report_manager: [
+    "/reports",
+    "/branch-report",
+    "/service-report-church",
+    "/homecell-report",
+    "/member-report",
+    "/profile",
+  ],
+};
+const HOMECELL_LEADER_ALLOWED_PATHS = [
+  "/dashboard",
+  "/homecell-attendance",
+  "/homecell-records",
+  "/profile",
+];
 
 export function getSessionRaw(): string | null {
   if (typeof window === "undefined") {
@@ -126,6 +170,57 @@ export function isHomecellLeaderSession(session: SessionData | null): boolean {
   );
 }
 
+export function getRestrictedManagerRole(session: SessionData | null): string | null {
+  const role = String(session?.user?.role || "");
+
+  return Object.prototype.hasOwnProperty.call(RESTRICTED_MANAGER_DEFAULT_ROUTES, role)
+    ? role
+    : null;
+}
+
+export function getRestrictedManagerGroupId(session: SessionData | null): string | null {
+  const role = getRestrictedManagerRole(session);
+
+  if (!role) {
+    return null;
+  }
+
+  return ({
+    homecell_manager: "homecell-management",
+    service_manager: "services",
+    member_manager: "members",
+    report_manager: "reports",
+  } as Record<string, string>)[role] || null;
+}
+
+export function canAccessPath(session: SessionData | null, pathname: string): boolean {
+  if (!hasValidSession(session)) {
+    return false;
+  }
+
+  if (isHomecellLeaderSession(session)) {
+    return HOMECELL_LEADER_ALLOWED_PATHS.includes(pathname);
+  }
+
+  const restrictedRole = getRestrictedManagerRole(session);
+
+  if (!restrictedRole) {
+    return true;
+  }
+
+  return (RESTRICTED_MANAGER_ALLOWED_PATHS[restrictedRole] || []).includes(pathname);
+}
+
 export function getDefaultRoute(session: SessionData | null): string {
-  return isHomecellLeaderSession(session) ? "/dashboard" : "/dashboard";
+  if (isHomecellLeaderSession(session)) {
+    return "/dashboard";
+  }
+
+  const restrictedRole = getRestrictedManagerRole(session);
+
+  if (restrictedRole) {
+    return RESTRICTED_MANAGER_DEFAULT_ROUTES[restrictedRole] || "/dashboard";
+  }
+
+  return "/dashboard";
 }

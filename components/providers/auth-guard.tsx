@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import { hasValidSession, parseSession, getSessionRaw, subscribeToSession } from "@/lib/session";
+import { usePathname, useRouter } from "next/navigation";
+import { canAccessPath, getDefaultRoute, hasValidSession, parseSession, getSessionRaw, subscribeToSession } from "@/lib/session";
 import type { SessionData } from "@/types/session";
 import { TemplateLoader } from "@/components/ui/template-loader";
 
@@ -24,6 +24,7 @@ export function useSessionContext(): SessionData {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const isClient = useSyncExternalStore(subscribeToSession, () => true, () => false);
   const sessionRaw = useSyncExternalStore(subscribeToSession, getSessionRaw, () => null);
   const session = useMemo(() => parseSession(sessionRaw), [sessionRaw]);
@@ -31,10 +32,15 @@ export function AuthGuard({ children }: AuthGuardProps) {
   useEffect(() => {
     if (isClient && !hasValidSession(session)) {
       router.replace("/login");
+      return;
     }
-  }, [isClient, router, session]);
 
-  if (!isClient || !session) {
+    if (isClient && session && !canAccessPath(session, pathname)) {
+      router.replace(getDefaultRoute(session));
+    }
+  }, [isClient, pathname, router, session]);
+
+  if (!isClient || !session || !canAccessPath(session, pathname)) {
     return <TemplateLoader />;
   }
 
