@@ -2,13 +2,26 @@
   box-sizing: border-box;
 }
 
+:root {
+  --app-shell-radius: 28px;
+  --app-shell-shadow: 0 24px 70px rgba(8, 47, 50, 0.14);
+  --app-shell-border: rgba(15, 98, 106, 0.12);
+  --app-shell-surface: rgba(255, 255, 255, 0.88);
+  --app-shell-surface-strong: #ffffff;
+  --app-shell-tint: linear-gradient(180deg, rgba(15, 98, 106, 0.1), rgba(15, 98, 106, 0));
+}
+
 html {
   scroll-behavior: smooth;
   min-height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(15, 98, 106, 0.12), transparent 32%),
+    linear-gradient(180deg, #f7fcfb 0%, #eef6f5 100%);
 }
 
 body {
   min-height: 100%;
+  background: transparent;
 }
 
 a {
@@ -32,4 +45,599 @@ a {
 .app-wrapper nav .app-nav .main-nav > li > a::after {
   display: none !important;
   content: none !important;
+}
+
+body .mobile-app-shell {
+  position: relative;
+  min-height: 100vh;
+}
+
+body .mobile-app-shell nav {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  border-right: 1px solid var(--app-shell-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 250, 249, 0.98)),
+    var(--app-shell-tint);
+  box-shadow: 12px 0 40px rgba(8, 47, 50, 0.08);
+  overflow: hidden;
+  z-index: 1100;
+}
+
+body .mobile-app-shell .app-shell-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(5, 31, 34, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 1090;
+}
+
+body .mobile-app-shell .app-shell-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+body .mobile-app-shell .app-logo {
+  flex: 0 0 auto;
+  padding: 0.9rem 1rem 0.8rem;
+}
+
+body .mobile-app-shell .app-logo-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  margin-bottom: 0.35rem;
+}
+
+body .mobile-app-shell .toggle-semi-nav {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  opacity: 1;
+  position: static;
+  flex: 0 0 auto;
+  padding: 0;
+  background: rgba(15, 98, 106, 0.08) !important;
+  color: rgba(15, 98, 106, 1);
+  box-shadow: inset 0 0 0 1px rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell .nav-profile {
+  margin-top: 0.35rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 98, 106, 0.08);
+  backdrop-filter: blur(14px);
+}
+
+body .mobile-app-shell .nav-profile-label {
+  display: inline-block;
+  font-size: 0.68rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(15, 98, 106, 0.68);
+  margin-bottom: 0.35rem;
+}
+
+body .mobile-app-shell .nav-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+  padding: 0.34rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(15, 98, 106, 0.1);
+  color: rgba(15, 98, 106, 1);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+body .mobile-app-shell .app-nav {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+  padding: 0 0.55rem 0.75rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li {
+  padding: 0 0.4rem;
+  margin-bottom: 0.45rem;
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li > .nav-entry,
+body .mobile-app-shell nav .app-nav .main-nav > li > a {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-height: 62px;
+  padding: 0.7rem 0.9rem;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 10px 20px rgba(15, 98, 106, 0.04);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li > a:hover,
+body .mobile-app-shell nav .app-nav .main-nav > li.active > a,
+body .mobile-app-shell nav .app-nav .main-nav > li > a[aria-expanded="true"] {
+  background: linear-gradient(135deg, rgba(15, 98, 106, 1), rgba(23, 128, 138, 0.92));
+  border-color: rgba(15, 98, 106, 0.35);
+  box-shadow: 0 18px 28px rgba(15, 98, 106, 0.18);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li.active > a,
+body .mobile-app-shell nav .app-nav .main-nav > li > a[aria-expanded="true"] {
+  color: #fff;
+}
+
+body .mobile-app-shell .nav-entry-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(15, 98, 106, 0.1);
+  color: rgba(15, 98, 106, 1);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li.active .nav-entry-icon,
+body .mobile-app-shell nav .app-nav .main-nav > li > a[aria-expanded="true"] .nav-entry-icon {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+body .mobile-app-shell .nav-entry-icon svg {
+  width: 1.35rem;
+  height: 1.35rem;
+  margin: 0;
+}
+
+body .mobile-app-shell .nav-entry-copy {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.16rem;
+}
+
+body .mobile-app-shell .nav-entry-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+body .mobile-app-shell .nav-entry-meta {
+  font-size: 0.72rem;
+  color: rgba(8, 47, 50, 0.62);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li.active .nav-entry-meta,
+body .mobile-app-shell nav .app-nav .main-nav > li > a[aria-expanded="true"] .nav-entry-meta {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li:not(.menu-title) ul {
+  margin: 0.45rem 0 0.2rem;
+  padding: 0.2rem 0;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li:not(.menu-title) ul li {
+  padding: 0.16rem 0.75rem;
+}
+
+body .mobile-app-shell .nav-sub-link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 42px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 14px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+body .mobile-app-shell .nav-sub-link:hover,
+body .mobile-app-shell nav .app-nav .main-nav > li:not(.menu-title) ul li.active .nav-sub-link {
+  background: rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell .nav-sub-link-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(15, 98, 106, 0.22);
+  flex: 0 0 auto;
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li:not(.menu-title) ul li.active .nav-sub-link-dot {
+  background: rgba(15, 98, 106, 1);
+}
+
+body .mobile-app-shell .app-sidebar-footer {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+
+body .mobile-app-shell .sidebar-footer-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 48px;
+  flex: 1;
+  border: 1px solid rgba(15, 98, 106, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+body .mobile-app-shell .sidebar-footer-link.text-danger {
+  color: rgba(var(--danger), 1) !important;
+}
+
+body .mobile-app-shell .app-content {
+  position: relative;
+  min-height: 100vh;
+  padding-bottom: calc(5.8rem + env(safe-area-inset-bottom, 0px));
+}
+
+body .mobile-app-shell .app-content-frame {
+  min-height: 100vh;
+}
+
+body .mobile-app-shell .header-main {
+  background: rgba(255, 255, 255, 0.78);
+  border-bottom: 1px solid rgba(15, 98, 106, 0.08);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 12px 30px rgba(8, 47, 50, 0.06);
+}
+
+body .mobile-app-shell .header-main::before {
+  display: none;
+}
+
+body .mobile-app-shell .header-main .container-fluid {
+  padding: 1rem 1.5rem;
+}
+
+body .mobile-app-shell .header-toggle {
+  border: 0;
+  box-shadow: inset 0 0 0 1px rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell .page-summary {
+  margin-left: 0.9rem;
+  min-width: 0;
+}
+
+body .mobile-app-shell .page-summary-eyebrow {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: rgba(15, 98, 106, 0.72);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+body .mobile-app-shell .page-summary h1 {
+  margin: 0;
+  color: #082f32;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 800;
+  line-height: 1.12;
+}
+
+body .mobile-app-shell .page-summary p {
+  margin: 0.18rem 0 0;
+  color: rgba(8, 47, 50, 0.62);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  max-width: 36rem;
+}
+
+body .mobile-app-shell .app-shell-search {
+  width: min(100%, 22rem);
+}
+
+body .mobile-app-shell .app-shell-search form {
+  margin-right: 0 !important;
+}
+
+body .mobile-app-shell .app-shell-search .form-control {
+  min-height: 46px;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 98, 106, 0.08);
+  background: rgba(245, 250, 249, 0.96);
+}
+
+body .mobile-app-shell .app-shell-search .form-control:focus {
+  border-color: rgba(15, 98, 106, 0.22);
+  box-shadow: 0 0 0 4px rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell .header-right ul {
+  gap: 0.7rem;
+}
+
+body .mobile-app-shell .header-right li:not(.dropdown-divider),
+body .mobile-app-shell .header-main .container-fluid .header-right li:not(.dropdown-menu .dropdown-item) {
+  margin-right: 0;
+}
+
+body .mobile-app-shell .app-head-icon {
+  min-height: 52px;
+  padding: 0.45rem 0.65rem;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(15, 98, 106, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell .profile-avatar-shell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(15, 98, 106, 0.18), rgba(15, 98, 106, 0.05));
+}
+
+body .mobile-app-shell .profile-identity {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-left: 0.65rem;
+}
+
+body .mobile-app-shell .profile-identity strong,
+body .mobile-app-shell .profile-identity small {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body .mobile-app-shell .profile-identity strong {
+  font-size: 0.9rem;
+  color: #082f32;
+}
+
+body .mobile-app-shell .profile-identity small {
+  color: rgba(8, 47, 50, 0.6);
+  font-size: 0.72rem;
+}
+
+body .mobile-app-shell .profile-caret {
+  margin-left: 0.55rem;
+  color: rgba(15, 98, 106, 0.78);
+}
+
+body .mobile-app-shell .header-profile .profile-dropdown {
+  margin-top: 0.25rem;
+  padding: 0.6rem !important;
+  border-radius: 20px;
+  border: 1px solid rgba(15, 98, 106, 0.1);
+  box-shadow: 0 20px 40px rgba(8, 47, 50, 0.15);
+}
+
+body .mobile-app-shell .profile-action-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 42px;
+  border-radius: 14px;
+  font-weight: 600;
+}
+
+body .mobile-app-shell .profile-action-link i {
+  font-size: 1.1rem;
+}
+
+body .mobile-app-shell main {
+  padding-top: 96px;
+}
+
+body .mobile-app-shell main > *:first-child {
+  animation: appShellEnter 0.28s ease;
+}
+
+body .mobile-app-shell .app-shell-footer {
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+body .mobile-app-shell .mobile-bottom-dock {
+  position: fixed;
+  left: 50%;
+  bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: none;
+  align-items: center;
+  gap: 0.35rem;
+  width: min(calc(100% - 1.25rem), 34rem);
+  padding: 0.55rem;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(15, 98, 106, 0.12);
+  box-shadow: var(--app-shell-shadow);
+  backdrop-filter: blur(18px);
+  z-index: 1200;
+}
+
+body .mobile-app-shell .mobile-dock-link {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.22rem;
+  min-height: 58px;
+  padding: 0.45rem 0.35rem;
+  border: 0;
+  border-radius: 22px;
+  background: transparent;
+  color: rgba(8, 47, 50, 0.62);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+body .mobile-app-shell .mobile-dock-link.active {
+  background: linear-gradient(135deg, rgba(15, 98, 106, 1), rgba(23, 128, 138, 0.92));
+  color: #fff;
+}
+
+body .mobile-app-shell .mobile-dock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+}
+
+body .mobile-app-shell .mobile-dock-icon svg,
+body .mobile-app-shell .mobile-dock-icon i {
+  width: 1.2rem;
+  height: 1.2rem;
+  font-size: 1.15rem;
+}
+
+body .mobile-app-shell .app-content .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  border-radius: 16px;
+  font-weight: 700;
+}
+
+@keyframes appShellEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1200px) {
+  body .mobile-app-shell .app-shell-backdrop {
+    display: none;
+  }
+
+  body .mobile-app-shell .app-content {
+    padding-bottom: 2rem;
+  }
+
+  body .mobile-app-shell .app-shell-footer {
+    padding-bottom: 1.5rem;
+  }
+}
+
+@media (max-width: 1199px) {
+  body .mobile-app-shell nav {
+    width: min(86vw, 360px) !important;
+    transform: translateX(-106%);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    border-radius: 0 28px 28px 0;
+    overflow: hidden;
+  }
+
+  body .mobile-app-shell nav.mobile-nav-open {
+    transform: translateX(0);
+  }
+
+  body .mobile-app-shell .app-content,
+  body .mobile-app-shell .header-main,
+  body .mobile-app-shell footer {
+    padding-left: 0 !important;
+  }
+
+  body .mobile-app-shell .header-main {
+    width: 100%;
+    left: 0;
+  }
+
+  body .mobile-app-shell .app-shell-search {
+    display: none;
+  }
+
+  body .mobile-app-shell .profile-identity,
+  body .mobile-app-shell .profile-caret {
+    display: none;
+  }
+
+  body .mobile-app-shell .mobile-bottom-dock {
+    display: flex;
+  }
+}
+
+@media (max-width: 767px) {
+  body .mobile-app-shell .app-logo {
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+
+  body .mobile-app-shell .header-main .container-fluid {
+    padding: calc(0.75rem + env(safe-area-inset-top, 0px)) 1rem 0.9rem;
+  }
+
+  body .mobile-app-shell .page-summary {
+    margin-left: 0.75rem;
+  }
+
+  body .mobile-app-shell .page-summary p {
+    display: none;
+  }
+
+  body .mobile-app-shell main {
+    width: 100%;
+    padding-top: 90px;
+  }
+}
+
+@media (max-width: 480px) {
+  body .mobile-app-shell .page-summary-eyebrow {
+    font-size: 0.63rem;
+  }
+
+  body .mobile-app-shell .page-summary h1 {
+    font-size: 1rem;
+  }
+
+  body .mobile-app-shell .header-toggle {
+    padding: 0.6rem;
+  }
+
+  body .mobile-app-shell .mobile-bottom-dock {
+    width: calc(100% - 1rem);
+    bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
 }

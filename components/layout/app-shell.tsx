@@ -36,6 +36,13 @@ export function AppShell({ session, children }: AppShellProps) {
     ? (session.homecell?.name || session.church?.name || "Church Workspace")
     : (session.church?.name || "Church Workspace");
   const allowHoverSemiNav = !isLeaderWorkspace;
+  const mobileDockItems = useMemo(() => getMobileDockItems(navGroups), [navGroups]);
+
+  function closeNavOnMobile() {
+    if (typeof window !== "undefined" && window.innerWidth < 1199) {
+      setIsSemiNav(false);
+    }
+  }
 
   useEffect(() => {
     setOpenGroups(buildGroupState(navGroups, pathname));
@@ -135,21 +142,35 @@ export function AppShell({ session, children }: AppShellProps) {
   }, [isSemiNav]);
 
   return (
-    <div className="app-wrapper">
-      <nav className={`${isSemiNav ? "semi-nav" : ""} ${allowHoverSemiNav ? "" : "no-hover-semi-nav"}`.trim()} id="church-nav" ref={navRef}>
-        <div className="app-logo">
-          <Link className="logo d-inline-block" href="/dashboard" />
+    <div className="app-wrapper mobile-app-shell">
+      <button
+        aria-hidden={!isSemiNav}
+        className={`app-shell-backdrop ${isSemiNav ? "show" : ""}`}
+        onClick={() => setIsSemiNav(false)}
+        tabIndex={isSemiNav ? 0 : -1}
+        type="button"
+      />
 
-          <span
-            className="bg-light-primary toggle-semi-nav d-flex-center"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              setIsSemiNav(false);
-            }}
-          >
-            <i className="ti ti-chevron-right" />
-          </span>
+      <nav
+        className={`${isSemiNav ? "semi-nav mobile-nav-open" : ""} ${allowHoverSemiNav ? "" : "no-hover-semi-nav"}`.trim()}
+        id="church-nav"
+        ref={navRef}
+      >
+        <div className="app-logo">
+          <div className="app-logo-header">
+            <button
+              aria-label="Close navigation"
+              className="bg-light-primary toggle-semi-nav d-flex-center"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setIsSemiNav(false);
+              }}
+              type="button"
+            >
+              <i className="ti ti-x" />
+            </button>
+          </div>
 
           <div className="d-flex align-items-center nav-profile p-3">
             <span className="h-45 w-45 d-flex-center b-r-10 position-relative bg-primary m-auto">
@@ -157,7 +178,9 @@ export function AppShell({ session, children }: AppShellProps) {
               <span className="position-absolute top-0 end-0 p-1 bg-success border border-light rounded-circle" />
             </span>
             <div className="flex-grow-1 ps-2">
+              <span className="nav-profile-label">Workspace</span>
               <p className="text-muted f-s-12 mb-0">{workspaceName}</p>
+              <span className="nav-profile-chip">{currentPageMeta.title}</span>
             </div>
           </div>
         </div>
@@ -167,9 +190,14 @@ export function AppShell({ session, children }: AppShellProps) {
             {navGroups.map((group) => (
               group.directHref ? (
                 <li className={`no-sub ${pathname === group.directHref ? "active" : ""}`} key={group.title}>
-                  <Link href={group.directHref}>
-                    <TemplateIcon name={group.icon} />
-                    {group.title}
+                  <Link className="nav-entry" href={group.directHref} onClick={closeNavOnMobile}>
+                    <span className="nav-entry-icon">
+                      <TemplateIcon name={group.icon} />
+                    </span>
+                    <span className="nav-entry-copy">
+                      <span className="nav-entry-title">{group.title}</span>
+                      <span className="nav-entry-meta">{getGroupDescription(group)}</span>
+                    </span>
                   </Link>
                 </li>
               ) : (
@@ -198,13 +226,21 @@ export function AppShell({ session, children }: AppShellProps) {
                       });
                     }}
                   >
-                    <TemplateIcon name={group.icon} />
-                    {group.title}
+                    <span className="nav-entry-icon">
+                      <TemplateIcon name={group.icon} />
+                    </span>
+                    <span className="nav-entry-copy">
+                      <span className="nav-entry-title">{group.title}</span>
+                      <span className="nav-entry-meta">{getGroupDescription(group)}</span>
+                    </span>
                   </a>
                   <ul className={`collapse ${openGroups[group.id || ""] ? "show" : ""}`} id={group.id}>
                     {group.items.map((item) => (
                       <li className={pathname === item.href ? "active" : ""} key={item.href}>
-                        <Link href={item.href}>{item.label}</Link>
+                        <Link className="nav-sub-link" href={item.href} onClick={closeNavOnMobile}>
+                          <span className="nav-sub-link-dot" />
+                          <span>{item.label}</span>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -212,6 +248,24 @@ export function AppShell({ session, children }: AppShellProps) {
               )
             ))}
           </ul>
+        </div>
+
+        <div className="app-sidebar-footer">
+          <Link className="sidebar-footer-link" href="/profile" onClick={closeNavOnMobile}>
+            <i className="ti ti-user-circle" />
+            <span>Profile</span>
+          </Link>
+          <button
+            className="sidebar-footer-link text-danger"
+            onClick={() => {
+              clearSession();
+              router.replace("/login");
+            }}
+            type="button"
+          >
+            <i className="ti ti-logout" />
+            <span>Logout</span>
+          </button>
         </div>
 
         {/* <div className="menu-navs">
@@ -225,22 +279,31 @@ export function AppShell({ session, children }: AppShellProps) {
       </nav>
 
       <div className="app-content">
-        <div className="">
+        <div className="app-content-frame">
           <header className="header-main" id="church-header">
             <div className="container-fluid">
-              <div className="row">
-                <div className="col-6 col-sm-6 d-flex align-items-center header-left p-0">
-                  <span
+              <div className="row align-items-center">
+                <div className="col-8 col-sm-7 d-flex align-items-center header-left p-0">
+                  <button
+                    aria-label="Toggle navigation"
                     className="header-toggle"
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
                       setIsSemiNav((current) => !current);
                     }}
+                    type="button"
                   >
                     <i className="ti ti-layout-sidebar-left-collapse" />
-                  </span>
-                  <div className="header-searchbar w-100">
+                  </button>
+                  <div className="page-summary">
+                    <span className="page-summary-eyebrow">{headerWorkspaceName}</span>
+                    <h1>{currentPageMeta.title}</h1>
+                    <p>{currentPageMeta.subtitle}</p>
+                  </div>
+                </div>
+                <div className="col-4 col-sm-5 d-flex align-items-center justify-content-end header-right p-0">
+                  <div className="header-searchbar app-shell-search">
                     <form action="#" className="mx-3 app-form app-icon-form">
                       <div className="position-relative">
                         <input
@@ -257,13 +320,11 @@ export function AppShell({ session, children }: AppShellProps) {
                       </div>
                     </form>
                   </div>
-                </div>
-                <div className="col-6 col-sm-6 d-flex align-items-center justify-content-end header-right p-0">
                   <ul className="d-flex align-items-center">
                     <li className="header-profile dropdown position-relative" ref={profileMenuRef}>
                       <a
                         aria-expanded={isProfileOpen ? "true" : "false"}
-                        className="d-block head-icon"
+                        className="d-flex align-items-center head-icon app-head-icon"
                         data-bs-toggle="dropdown"
                         href="#"
                         onClick={(event) => {
@@ -271,7 +332,14 @@ export function AppShell({ session, children }: AppShellProps) {
                           setIsProfileOpen((current) => !current);
                         }}
                       >
-                        <img alt="avatar" className="b-r-10 h-35 w-35" src="/assets/images/avatar/1.png" />
+                        <span className="profile-avatar-shell">
+                          <img alt="avatar" className="b-r-10 h-35 w-35" src="/assets/images/avatar/1.png" />
+                        </span>
+                        <span className="profile-identity">
+                          <strong>{userName}</strong>
+                          <small>{currentPageMeta.title}</small>
+                        </span>
+                        <i className="ti ti-chevron-down profile-caret" />
                       </a>
                       <ul className={`dropdown-menu dropdown-menu-end profile-dropdown p-2 ${isProfileOpen ? "show" : ""}`}>
                         <li className="dropdown-item-text">
@@ -292,13 +360,14 @@ export function AppShell({ session, children }: AppShellProps) {
                           <hr className="dropdown-divider" />
                         </li>
                         <li>
-                          <Link className="dropdown-item" href="/profile">
+                          <Link className="dropdown-item profile-action-link" href="/profile">
+                            <i className="ti ti-user-circle" />
                             {isHomecellLeaderSession(session) ? "My Profile" : "Settings"}
                           </Link>
                         </li>
                         <li>
                           <a
-                            className="dropdown-item text-danger"
+                            className="dropdown-item text-danger profile-action-link"
                             href="#logout"
                             onClick={(event) => {
                               event.preventDefault();
@@ -306,6 +375,7 @@ export function AppShell({ session, children }: AppShellProps) {
                               router.replace("/login");
                             }}
                           >
+                            <i className="ti ti-logout" />
                             Logout
                           </a>
                         </li>
@@ -319,10 +389,36 @@ export function AppShell({ session, children }: AppShellProps) {
 
           <main>{children}</main>
 
-          <div className="container-fluid pb-4">
+          <div className="container-fluid app-shell-footer pb-4">
             <div className="text-secondary small">Built in service by Cyfamod Technologies</div>
           </div>
         </div>
+      </div>
+
+      <div className="mobile-bottom-dock">
+        {mobileDockItems.map((item) => (
+          <Link
+            className={`mobile-dock-link ${item.active(pathname) ? "active" : ""}`}
+            href={item.href}
+            key={item.href}
+            onClick={closeNavOnMobile}
+          >
+            <span className="mobile-dock-icon">
+              <TemplateIcon name={item.icon} />
+            </span>
+            <span>{item.label}</span>
+          </Link>
+        ))}
+        <button
+          className={`mobile-dock-link mobile-dock-menu ${isSemiNav ? "active" : ""}`}
+          onClick={() => setIsSemiNav((current) => !current)}
+          type="button"
+        >
+          <span className="mobile-dock-icon">
+            <i className={`ti ${isSemiNav ? "ti-x" : "ti-layout-grid-add"}`} />
+          </span>
+          <span>{isSemiNav ? "Close" : "Menu"}</span>
+        </button>
       </div>
     </div>
   );
@@ -537,4 +633,35 @@ function isGroupActive(
   return pathname === group.directHref
     || (group.id ? pathname === `/${group.id}` : false)
     || group.items.some((item) => pathname === item.href);
+}
+
+function getGroupDescription(group: ReturnType<typeof getNavGroups>[number]) {
+  const labels = group.items.map((item) => item.label);
+
+  if (labels.length === 0) {
+    return "Open workspace";
+  }
+
+  return labels.slice(0, 2).join(" • ");
+}
+
+function getMobileDockItems(navGroups: ReturnType<typeof getNavGroups>) {
+  return navGroups.slice(0, 3).map((group) => ({
+    href: group.directHref || group.items[0]?.href || "/dashboard",
+    icon: group.icon,
+    label: getCompactMobileLabel(group.title),
+    active: (pathname: string) => isGroupActive(group, pathname),
+  }));
+}
+
+function getCompactMobileLabel(label: string) {
+  if (label === "Homecell Management") {
+    return "Homecell";
+  }
+
+  if (label === "Church Setup") {
+    return "Setup";
+  }
+
+  return label;
 }
