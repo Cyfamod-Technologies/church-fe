@@ -24,6 +24,7 @@ export function AppShell({ session, children }: AppShellProps) {
   const [isSemiNav, setIsSemiNav] = useState(false);
   const profileMenuRef = useRef<HTMLLIElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
+  const mobileDockRef = useRef<HTMLDivElement | null>(null);
   const wasMobileViewportRef = useRef<boolean | null>(null);
   const workspaceName = isLeaderWorkspace
     ? `${session.church?.name || "Church"} / ${session.homecell?.name || "Homecell"}`
@@ -38,9 +39,17 @@ export function AppShell({ session, children }: AppShellProps) {
   const allowHoverSemiNav = !isLeaderWorkspace;
   const mobileDockItems = useMemo(() => getMobileDockItems(navGroups), [navGroups]);
 
+  function closeNav() {
+    setIsSemiNav(false);
+  }
+
+  function toggleNav() {
+    setIsSemiNav((current) => !current);
+  }
+
   function closeNavOnMobile() {
     if (typeof window !== "undefined" && window.innerWidth < 1199) {
-      setIsSemiNav(false);
+      closeNav();
     }
   }
 
@@ -129,6 +138,10 @@ export function AppShell({ session, children }: AppShellProps) {
         return;
       }
 
+      if (mobileDockRef.current?.contains(target)) {
+        return;
+      }
+
       setIsSemiNav(false);
     }
 
@@ -146,7 +159,7 @@ export function AppShell({ session, children }: AppShellProps) {
       <button
         aria-hidden={!isSemiNav}
         className={`app-shell-backdrop ${isSemiNav ? "show" : ""}`}
-        onClick={() => setIsSemiNav(false)}
+        onClick={closeNav}
         tabIndex={isSemiNav ? 0 : -1}
         type="button"
       />
@@ -164,7 +177,7 @@ export function AppShell({ session, children }: AppShellProps) {
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
-                setIsSemiNav(false);
+                closeNav();
               }}
               type="button"
             >
@@ -197,6 +210,9 @@ export function AppShell({ session, children }: AppShellProps) {
                     <span className="nav-entry-copy">
                       <span className="nav-entry-title">{group.title}</span>
                       <span className="nav-entry-meta">{getGroupDescription(group)}</span>
+                    </span>
+                    <span className="nav-entry-tail" aria-hidden="true">
+                      <i className="ti ti-chevron-right" />
                     </span>
                   </Link>
                 </li>
@@ -232,6 +248,9 @@ export function AppShell({ session, children }: AppShellProps) {
                     <span className="nav-entry-copy">
                       <span className="nav-entry-title">{group.title}</span>
                       <span className="nav-entry-meta">{getGroupDescription(group)}</span>
+                    </span>
+                    <span className="nav-entry-tail" aria-hidden="true">
+                      <i className={`ti ${openGroups[group.id || ""] ? "ti-chevron-up" : "ti-chevron-down"}`} />
                     </span>
                   </a>
                   <ul className={`collapse ${openGroups[group.id || ""] ? "show" : ""}`} id={group.id}>
@@ -290,7 +309,7 @@ export function AppShell({ session, children }: AppShellProps) {
                     onClick={(event) => {
                       event.preventDefault();
                       event.stopPropagation();
-                      setIsSemiNav((current) => !current);
+                      toggleNav();
                     }}
                     type="button"
                   >
@@ -395,7 +414,7 @@ export function AppShell({ session, children }: AppShellProps) {
         </div>
       </div>
 
-      <div className="mobile-bottom-dock">
+      <div className="mobile-bottom-dock" ref={mobileDockRef}>
         {mobileDockItems.map((item) => (
           <Link
             className={`mobile-dock-link ${item.active(pathname) ? "active" : ""}`}
@@ -411,13 +430,13 @@ export function AppShell({ session, children }: AppShellProps) {
         ))}
         <button
           className={`mobile-dock-link mobile-dock-menu ${isSemiNav ? "active" : ""}`}
-          onClick={() => setIsSemiNav((current) => !current)}
+          onClick={toggleNav}
           type="button"
         >
           <span className="mobile-dock-icon">
             <i className={`ti ${isSemiNav ? "ti-x" : "ti-layout-grid-add"}`} />
           </span>
-          <span>{isSemiNav ? "Close" : "Menu"}</span>
+          <span>Menu</span>
         </button>
       </div>
     </div>

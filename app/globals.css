@@ -84,14 +84,19 @@ body .mobile-app-shell .app-shell-backdrop.show {
 
 body .mobile-app-shell .app-logo {
   flex: 0 0 auto;
-  padding: 0.9rem 1rem 0.8rem;
+  position: relative;
+  padding: 0.5rem 1rem 0.55rem;
 }
 
 body .mobile-app-shell .app-logo-header {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
+  z-index: 2;
 }
 
 body .mobile-app-shell .toggle-semi-nav {
@@ -108,7 +113,7 @@ body .mobile-app-shell .toggle-semi-nav {
 }
 
 body .mobile-app-shell .nav-profile {
-  margin-top: 0.35rem;
+  margin-top: 0;
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(15, 98, 106, 0.08);
@@ -162,11 +167,12 @@ body .mobile-app-shell nav .app-nav .main-nav > li > a {
   align-items: center;
   gap: 0.9rem;
   min-height: 62px;
-  padding: 0.7rem 0.9rem;
+  padding: 0.45rem 0 0.45rem 0.9rem;
   border-radius: 20px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.38);
+  background: #ffffff;
   box-shadow: 0 10px 20px rgba(15, 98, 106, 0.04);
+  overflow: hidden;
 }
 
 body .mobile-app-shell nav .app-nav .main-nav > li > a:hover,
@@ -212,6 +218,34 @@ body .mobile-app-shell .nav-entry-copy {
   min-width: 0;
   flex-direction: column;
   gap: 0.16rem;
+}
+
+body .mobile-app-shell .nav-entry-tail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: stretch;
+  width: 58px;
+  flex: 0 0 auto;
+  margin-left: 0.4rem;
+  border-radius: 0;
+  border-top-right-radius: 19px;
+  border-bottom-right-radius: 19px;
+  background: #e8f1f0;
+  color: rgba(15, 98, 106, 0.88);
+  box-shadow: inset 1px 0 0 rgba(15, 98, 106, 0.08);
+}
+
+body .mobile-app-shell nav .app-nav .main-nav > li.active .nav-entry-tail,
+body .mobile-app-shell nav .app-nav .main-nav > li > a[aria-expanded="true"] .nav-entry-tail {
+  background: rgba(8, 84, 91, 0.92);
+  color: #fff;
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+body .mobile-app-shell .nav-entry-tail i {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 body .mobile-app-shell .nav-entry-title {
@@ -308,7 +342,7 @@ body .mobile-app-shell .app-content-frame {
 }
 
 body .mobile-app-shell .header-main {
-  background: rgba(255, 255, 255, 0.78);
+  background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid rgba(15, 98, 106, 0.08);
   backdrop-filter: blur(18px);
   box-shadow: 0 12px 30px rgba(8, 47, 50, 0.06);
@@ -459,7 +493,7 @@ body .mobile-app-shell .profile-action-link i {
 }
 
 body .mobile-app-shell main {
-  padding-top: 96px;
+  padding-top: 112px;
 }
 
 body .mobile-app-shell main > *:first-child {
@@ -478,7 +512,7 @@ body .mobile-app-shell .mobile-bottom-dock {
   display: none;
   align-items: center;
   gap: 0.35rem;
-  width: min(calc(100% - 1.25rem), 34rem);
+  width: min(calc(100% - 1.1rem), 34rem);
   padding: 0.55rem;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.84);
@@ -495,13 +529,13 @@ body .mobile-app-shell .mobile-dock-link {
   align-items: center;
   justify-content: center;
   gap: 0.22rem;
-  min-height: 58px;
-  padding: 0.45rem 0.35rem;
+  min-height: 56px;
+  padding: 0.45rem 0.25rem;
   border: 0;
   border-radius: 22px;
   background: transparent;
   color: rgba(8, 47, 50, 0.62);
-  font-size: 0.72rem;
+  font-size: 0.69rem;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -602,7 +636,11 @@ body .mobile-app-shell .app-content .btn {
 
 @media (max-width: 767px) {
   body .mobile-app-shell .app-logo {
-    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+    padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
+  }
+
+  body .mobile-app-shell .app-logo-header {
+    top: calc(0.5rem + env(safe-area-inset-top, 0px));
   }
 
   body .mobile-app-shell .header-main .container-fluid {
@@ -613,13 +651,20 @@ body .mobile-app-shell .app-content .btn {
     margin-left: 0.75rem;
   }
 
+  body .mobile-app-shell .page-summary-eyebrow,
   body .mobile-app-shell .page-summary p {
     display: none;
   }
 
+  body .mobile-app-shell .page-summary h1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   body .mobile-app-shell main {
     width: 100%;
-    padding-top: 90px;
+    padding-top: 104px;
   }
 }
 
