@@ -799,8 +799,31 @@ body .mobile-app-shell .app-content .btn {
     top: calc(0.5rem + env(safe-area-inset-top, 0px));
   }
 
+  body .mobile-app-shell .header-main {
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
   body .mobile-app-shell .header-main .container-fluid {
-    padding: calc(0.24rem + env(safe-area-inset-top, 0px)) 1rem 0.24rem;
+    padding: calc(0.08rem + env(safe-area-inset-top, 0px)) 0.9rem 0.1rem !important;
+  }
+
+  body .mobile-app-shell .header-main .container-fluid > .row {
+    min-height: 40px;
+  }
+
+  body .mobile-app-shell .header-left,
+  body .mobile-app-shell .header-right {
+    min-height: 40px;
+  }
+
+  body .mobile-app-shell .header-toggle {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
 
   body .mobile-app-shell .page-summary {
@@ -820,7 +843,7 @@ body .mobile-app-shell .app-content .btn {
 
   body .mobile-app-shell main {
     width: 100%;
-    padding-top: 42px;
+    padding-top: 28px;
   }
 
   body .mobile-app-shell .app-content {
