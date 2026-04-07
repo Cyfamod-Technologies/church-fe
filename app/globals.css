@@ -336,7 +336,7 @@ body .mobile-app-shell .sidebar-footer-link.text-danger {
 body .mobile-app-shell .app-content {
   position: relative;
   min-height: 100vh;
-  padding-bottom: calc(4.85rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(3.7rem + env(safe-area-inset-bottom, 0px));
 }
 
 body .mobile-app-shell .app-content-frame {
@@ -495,7 +495,7 @@ body .mobile-app-shell .profile-action-link i {
 }
 
 body .mobile-app-shell main {
-  padding-top: 84px;
+  padding-top: 72px;
 }
 
 body .mobile-app-shell main > *:first-child {
@@ -646,7 +646,7 @@ body .mobile-app-shell .app-content .btn {
   }
 
   body .mobile-app-shell .header-main .container-fluid {
-    padding: calc(0.42rem + env(safe-area-inset-top, 0px)) 1rem 0.5rem;
+    padding: calc(0.24rem + env(safe-area-inset-top, 0px)) 1rem 0.28rem;
   }
 
   body .mobile-app-shell .page-summary {
@@ -666,7 +666,23 @@ body .mobile-app-shell .app-content .btn {
 
   body .mobile-app-shell main {
     width: 100%;
-    padding-top: 62px;
+    padding-top: 46px;
+  }
+
+  body .mobile-app-shell .app-content {
+    padding-bottom: 0;
+  }
+
+  body .mobile-app-shell .app-shell-footer {
+    display: none;
+  }
+
+  body .mobile-app-shell .mobile-bottom-dock {
+    bottom: 0;
+    width: calc(100% - 0.5rem);
+    padding: 0.4rem;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
   }
 }
 
@@ -684,7 +700,7 @@ body .mobile-app-shell .app-content .btn {
   }
 
   body .mobile-app-shell .mobile-bottom-dock {
-    width: calc(100% - 1rem);
-    bottom: max(0.15rem, env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 0.5rem);
+    bottom: 0;
   }
 }
