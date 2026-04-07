@@ -37,6 +37,7 @@ export function AppShell({ session, children }: AppShellProps) {
     ? (session.homecell?.name || session.church?.name || "Church Workspace")
     : (session.church?.name || "Church Workspace");
   const allowHoverSemiNav = !isLeaderWorkspace;
+  const isDashboardRoute = pathname === "/dashboard";
   const mobileDockItems = useMemo(() => getMobileDockItems(navGroups), [navGroups]);
 
   function closeNav() {
@@ -155,7 +156,7 @@ export function AppShell({ session, children }: AppShellProps) {
   }, [isSemiNav]);
 
   return (
-    <div className="app-wrapper mobile-app-shell">
+    <div className={`app-wrapper mobile-app-shell ${isDashboardRoute ? "dashboard-route" : ""}`.trim()}>
       <button
         aria-hidden={!isSemiNav}
         className={`app-shell-backdrop ${isSemiNav ? "show" : ""}`}

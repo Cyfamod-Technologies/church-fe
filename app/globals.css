@@ -47,6 +47,71 @@ a {
   content: none !important;
 }
 
+.dashboard-hero-card {
+  overflow: hidden;
+  border: 1px solid rgba(15, 98, 106, 0.08);
+  box-shadow: 0 18px 40px rgba(8, 47, 50, 0.08);
+}
+
+.dashboard-hero-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 1.25rem;
+  padding: 1.35rem 1.5rem;
+}
+
+.dashboard-hero-copy {
+  flex: 1 1 20rem;
+  min-width: 0;
+}
+
+.dashboard-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.45rem;
+  padding: 0.36rem 0.72rem;
+  border-radius: 999px;
+  background: rgba(15, 98, 106, 0.08);
+  color: rgba(15, 98, 106, 0.92);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.dashboard-hero-copy h4 {
+  margin-bottom: 0.45rem !important;
+  color: #082f32;
+  font-size: clamp(1.35rem, 2.2vw, 1.85rem);
+  font-weight: 800;
+  line-height: 1.08;
+}
+
+.dashboard-hero-copy p {
+  margin-bottom: 0 !important;
+  max-width: 42rem;
+  color: rgba(8, 47, 50, 0.7) !important;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.dashboard-hero-actions {
+  display: flex;
+  flex: 0 1 28rem;
+  margin-left: auto;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.dashboard-hero-button {
+  min-height: 48px;
+  padding-inline: 1rem;
+  border-radius: 16px !important;
+  font-weight: 700;
+}
+
 body .mobile-app-shell {
   position: relative;
   min-height: 100vh;
@@ -394,6 +459,10 @@ body .mobile-app-shell .page-summary p {
   max-width: 36rem;
 }
 
+body .mobile-app-shell.dashboard-route .page-summary {
+  display: none;
+}
+
 body .mobile-app-shell .app-shell-search {
   width: min(100%, 22rem);
 }
@@ -626,6 +695,10 @@ body .mobile-app-shell .app-content .btn {
     display: none;
   }
 
+  body .mobile-app-shell .page-summary {
+    display: none;
+  }
+
   body .mobile-app-shell .profile-identity,
   body .mobile-app-shell .profile-caret {
     display: none;
@@ -637,24 +710,32 @@ body .mobile-app-shell .app-content .btn {
 }
 
 @media (min-width: 768px) and (max-width: 1199px) {
+  .dashboard-hero-body {
+    gap: 1rem;
+    padding: 1.15rem 1.25rem;
+  }
+
+  .dashboard-hero-eyebrow {
+    display: none;
+  }
+
+  .dashboard-hero-copy p {
+    font-size: 0.92rem;
+    max-width: none;
+  }
+
+  .dashboard-hero-actions {
+    flex-basis: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
   body .mobile-app-shell .header-main .container-fluid {
-    padding: calc(0.6rem + env(safe-area-inset-top, 0px)) 1.25rem 0.65rem;
-  }
-
-  body .mobile-app-shell .page-summary {
-    margin-left: 0.8rem;
-  }
-
-  body .mobile-app-shell .page-summary p {
-    max-width: 30rem;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    padding: calc(0.5rem + env(safe-area-inset-top, 0px)) 1.25rem 0.5rem;
   }
 
   body .mobile-app-shell main {
-    padding-top: 104px;
+    padding-top: 72px;
   }
 
   body .mobile-app-shell .app-content {
@@ -673,6 +754,43 @@ body .mobile-app-shell .app-content .btn {
 }
 
 @media (max-width: 767px) {
+  .dashboard-hero-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+    padding: 0.9rem 0.9rem 1rem;
+  }
+
+  .dashboard-hero-copy {
+    flex: 0 1 auto;
+  }
+
+  .dashboard-hero-eyebrow {
+    display: none;
+  }
+
+  .dashboard-hero-copy h4 {
+    font-size: 1.08rem;
+    margin-bottom: 0.3rem !important;
+  }
+
+  .dashboard-hero-copy p {
+    font-size: 0.84rem;
+    line-height: 1.4;
+  }
+
+  .dashboard-hero-actions {
+    flex-basis: auto;
+    margin-left: 0;
+    justify-content: stretch;
+    gap: 0.65rem;
+  }
+
+  .dashboard-hero-button {
+    width: 100%;
+    justify-content: center;
+  }
+
   body .mobile-app-shell .app-logo {
     padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
   }
@@ -682,7 +800,7 @@ body .mobile-app-shell .app-content .btn {
   }
 
   body .mobile-app-shell .header-main .container-fluid {
-    padding: calc(0.24rem + env(safe-area-inset-top, 0px)) 1rem 0.28rem;
+    padding: calc(0.24rem + env(safe-area-inset-top, 0px)) 1rem 0.24rem;
   }
 
   body .mobile-app-shell .page-summary {
@@ -702,7 +820,7 @@ body .mobile-app-shell .app-content .btn {
 
   body .mobile-app-shell main {
     width: 100%;
-    padding-top: 46px;
+    padding-top: 42px;
   }
 
   body .mobile-app-shell .app-content {

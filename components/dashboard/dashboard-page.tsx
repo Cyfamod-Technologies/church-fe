@@ -156,40 +156,39 @@ export function DashboardPage({ session }: DashboardPageProps) {
     <div className="container-fluid">
       <div className="row">
         <div className="col-12">
-          <div className="card">
-            <div className="card-body">
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                  <h4 className="mb-1">{workspaceTitle}</h4>
-                  <p className="text-secondary mb-0">{workspaceSubtitle}</p>
-                </div>
-                <div className="d-flex gap-2 flex-wrap">
+          <div className="card dashboard-hero-card">
+            <div className="card-body dashboard-hero-body">
+              <div className="dashboard-hero-copy">
+                <span className="dashboard-hero-eyebrow">Church workspace</span>
+                <h4 className="mb-1">{workspaceTitle}</h4>
+                <p className="text-secondary mb-0">{workspaceSubtitle}</p>
+              </div>
+              <div className="dashboard-hero-actions">
                   {isLeader ? (
                     <>
-                      <Link className="btn btn-primary" href="/homecell-management">
+                      <Link className="btn btn-primary dashboard-hero-button" href="/homecell-management">
                         Record Homecell Attendance
                       </Link>
-                      <Link className="btn btn-light-secondary" href="/profile">
+                      <Link className="btn btn-light-secondary dashboard-hero-button" href="/profile">
                         My Profile
                       </Link>
                     </>
                   ) : (
                     <>
-                      <Link className="btn btn-primary" href="/services">
+                      <Link className="btn btn-primary dashboard-hero-button" href="/services">
                         Record Attendance
                       </Link>
-                      <Link className="btn btn-outline-primary" href="/homecell-management">
+                      <Link className="btn btn-outline-primary dashboard-hero-button" href="/homecell-management">
                         Homecell Attendance
                       </Link>
-                      <Link className="btn btn-light-primary" href="/church-setup">
+                      <Link className="btn btn-light-primary dashboard-hero-button" href="/church-setup">
                         Create Branch
                       </Link>
-                      <Link className="btn btn-light-secondary" href="/church-setup">
+                      <Link className="btn btn-light-secondary dashboard-hero-button" href="/church-setup">
                         Church Setup
                       </Link>
                     </>
                   )}
-                </div>
               </div>
             </div>
           </div>
@@ -508,31 +507,30 @@ function LeaderDashboard({
     <div className="container-fluid">
       <div className="row">
         <div className="col-12">
-          <div className="card">
-            <div className="card-body">
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
-                <div>
-                  <h4 className="mb-1">{activeHomecell?.name || "My Homecell Dashboard"}</h4>
-                  <p className="text-secondary mb-0">
+          <div className="card dashboard-hero-card">
+            <div className="card-body dashboard-hero-body">
+              <div className="dashboard-hero-copy">
+                <span className="dashboard-hero-eyebrow">Homecell workspace</span>
+                <h4 className="mb-1">{activeHomecell?.name || "My Homecell Dashboard"}</h4>
+                <p className="text-secondary mb-0">
                     {activeHomecell?.name
                       ? `You are recording and reviewing attendance for ${activeHomecell.name}.`
                       : workspaceSubtitle}
-                  </p>
-                </div>
-                <div className="d-flex gap-2 flex-wrap">
-                  <Link className="btn btn-primary" href="/homecell-attendance">
+                </p>
+              </div>
+              <div className="dashboard-hero-actions">
+                  <Link className="btn btn-primary dashboard-hero-button" href="/homecell-attendance">
                     <i className="ti ti-clipboard-plus me-1" />
                     Record Attendance
                   </Link>
-                  <Link className="btn btn-outline-secondary" href="/homecell-records">
+                  <Link className="btn btn-outline-secondary dashboard-hero-button" href="/homecell-records">
                     <i className="ti ti-table me-1" />
                     View Records
                   </Link>
-                  <Link className="btn btn-outline-secondary" href="/profile">
+                  <Link className="btn btn-outline-secondary dashboard-hero-button" href="/profile">
                     <i className="ti ti-user me-1" />
                     My Profile
                   </Link>
-                </div>
               </div>
             </div>
           </div>
